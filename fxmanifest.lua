@@ -1,13 +1,12 @@
 -- Made by @Tomić#9076
-
 fx_version 'cerulean'
-games { 'gta5' }
+game 'gta5'
 lua54 'yes'
 
-author "devTomic (tomiichx)"
-description "Territory System for Gangs"
+author 'tomiichx'
+description 'Territory System for Gangs'
 
-version 'Tomić Development | v1.0.0'
+version 'v2.0'
 
 shared_scripts {
   '@es_extended/imports.lua',
@@ -15,21 +14,9 @@ shared_scripts {
   'shared.lua'
 }
 
-client_scripts {
-  'client.lua'
-}
+client_script 'client.lua'
 
-server_scripts { 
+server_scripts {
   '@oxmysql/lib/MySQL.lua',
-  '@es_extended/locale.lua',
-  'server.lua',
+  'server.lua'
 }
-
---[[
-████████╗░█████╗░███╗░░░███╗██╗░█████╗░
-╚══██╔══╝██╔══██╗████╗░████║██║██╔══██╗
-░░░██║░░░██║░░██║██╔████╔██║██║██║░░╚═╝
-░░░██║░░░██║░░██║██║╚██╔╝██║██║██║░░██╗
-░░░██║░░░╚█████╔╝██║░╚═╝░██║██║╚█████╔╝
-░░░╚═╝░░░░╚════╝░╚═╝░░░░░╚═╝╚═╝░╚════╝░
-]]
