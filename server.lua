@@ -268,23 +268,22 @@ end
 function checkForUpdates()
     local currentVersion = GetResourceMetadata(GetCurrentResourceName(), 'version', 0)
     PerformHttpRequest('https://api.github.com/repos/tomiichx/tomic_territories/releases/latest', function(code, response)
-        if code == 200 then
-            local returnedData = json.decode(response)
-            local latestVersion = returnedData.tag_name
-            local downloadLink = returnedData.html_url
-
-            if currentVersion ~= latestVersion then
-                print('\n')
-                print('devTomic | There is a new update available for ' .. GetCurrentResourceName())
-                print('devTomic | Your version: ' .. currentVersion .. ' | New version: ' .. latestVersion)
-                print('devTomic | Download it from: ' .. downloadLink)
-                print('\n')
-            else
-                print('devTomic | You are using the latest version of ' .. GetCurrentResourceName())
-            end
-
-        else
-            print('devTomic | There was an error while checking for updates.')
+        if code ~= 200 then
+            return print('devTomic | There was an error while checking for updates.')
         end
+
+        local returnedData = json.decode(response)
+        local latestVersion = returnedData.tag_name
+        local downloadLink = returnedData.html_url
+
+        if currentVersion == latestVersion then
+            return print('devTomic | You are using the latest version of ' .. GetCurrentResourceName())
+        end
+
+        print('\n')
+        print('devTomic | There is a new update available for ' .. GetCurrentResourceName())
+        print('devTomic | Your version: ' .. currentVersion .. ' | New version: ' .. latestVersion)
+        print('devTomic | Download it from: ' .. downloadLink)
+        print('\n')
     end, 'GET')
 end
