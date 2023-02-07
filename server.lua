@@ -1,7 +1,17 @@
 local territories = {}
+local queries = {
+    SELECT_POINTS = 'SELECT * FROM jobs',
+    SELECT_PREPARE_POINTS = 'SELECT * FROM jobs WHERE name IN (?, ?)',
+    SELECT_TERRITORY = 'SELECT * FROM tomic_territories',
+    INSERT_TERRITORY = 'INSERT INTO tomic_territories (id, name, owner, radius, label, type, coords) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    UPDATE_POINTS = 'UPDATE jobs SET weeklyPoints = ?, monthlyPoints = ?, totalPoints = ? WHERE name = ?',
+    UPDATE_RESET_POINTS = "UPDATE jobs SET weeklyPoints = 0",
+    UPDATE_TERRITORY = 'UPDATE tomic_territories SET owner = ?, label = ? WHERE id = ?',
+    DELETE_TERRITORY = 'DELETE FROM tomic_territories WHERE name = ?'
+}
 
 CreateThread(function()
-    MySQL.query('SELECT * FROM tomic_territories', {}, function(data)
+    MySQL.query(queries.SELECT_TERRITORY, function(data)
         if data then
             territories = {}
             for i = 1, #data, 1 do
@@ -20,7 +30,7 @@ end)
 
 if shared.rankings then
     ESX.RegisterServerCallback('tomic_territories:fetchPoints', function(source, cb)
-        MySQL.query('SELECT * FROM jobs', {}, function(cbResults)
+        MySQL.query(queries.SELECT_POINTS, function(cbResults)
             if cbResults then
                 cb(cbResults)
             end
@@ -55,53 +65,56 @@ end, false)
 RegisterNetEvent('tomic_territories:createTerritory')
 AddEventHandler('tomic_territories:createTerritory', function(territoryInfo)
     local xPlayer = ESX.GetPlayerFromId(source)
+
+    for i = 1, #territories, 1 do
+        if territories[i].name == territoryInfo.name then
+            return xPlayer.showNotification('devTomic | Territory with that name already exists!')
+        end
+    end
+
     local territory = {
         id = #territories + 1,
         name = territoryInfo.name,
         owner = 'noone',
         radius = territoryInfo.radius,
         label = 'NoOne',
-        type = territoryInfo.type,
+        type = territoryInfo.type or 'default',
         coords = territoryInfo.coords,
         progress = 0,
         isTaking = false,
         isCooldown = false
     }
 
-    MySQL.Async.execute(
-        "INSERT INTO tomic_territories (id, name, type, coords, radius) VALUES (@id, @name, @type, @coords, @radius)", {
-        ['@id'] = territory.id,
-        ['@name'] = territory.name,
-        ['@type'] = territory.type,
-        ['@coords'] = json.encode(territory.coords),
-        ['@radius'] = territory.radius
-    }, function(rowsChanged)
-        if rowsChanged > 0 then
-            table.insert(territories, territory)
-            exports.ox_inventory:RegisterStash("devTomic-Ter[" .. territory.name .. "][" .. territory.id .. "]", "devTomic | Territory: " .. territory.name, 50, 100000)
-            TriggerClientEvent('tomic_territories:updateTerritories', -1, territories)
-            xPlayer.showNotification("devTomic | Territory created!")
+    MySQL.query(queries.INSERT_TERRITORY, { territory.id, territory.name, territory.owner, territory.radius, territory.label, territory.type, json.encode(territory.coords) }, function(rowsChanged)
+        if rowsChanged.affectedRows == 0 then
+            return xPlayer.showNotification('devTomic | Territory creation failed!')
         end
+
+        table.insert(territories, territory)
+        exports.ox_inventory:RegisterStash('devTomic-Ter[' .. territory.name .. '][' .. territory.id .. ']', 'devTomic | Territory: ' .. territory.name, 50, 100000)
+        TriggerClientEvent('tomic_territories:updateTerritories', -1, territories)
+        xPlayer.showNotification('devTomic | Territory created!')
     end)
 end)
 
 RegisterNetEvent('tomic_territories:deleteTerritory')
 AddEventHandler('tomic_territories:deleteTerritory', function(territoryName)
     local xPlayer = ESX.GetPlayerFromId(source)
-    MySQL.Async.execute('DELETE FROM tomic_territories WHERE name = @name', {
-        ['@name'] = territoryName,
-    }, function(rowsChanged)
-        if rowsChanged > 0 then
-            for i = 1, #territories, 1 do
-                if territories[i].name == territoryName then
-                    table.remove(territories, i)
-                    break
-                end
-            end
-            Wait(500)
-            TriggerClientEvent('tomic_territories:updateTerritories', -1, territories)
-            xPlayer.showNotification('devTomic | Territory deleted!')
+    MySQL.query(queries.DELETE_TERRITORY, { territoryName }, function(rowsChanged)
+        if rowsChanged.affectedRows == 0 then
+            return xPlayer.showNotification('devTomic | Territory deletion failed!')
         end
+
+        for i = 1, #territories, 1 do
+            if territories[i].name == territoryName then
+                table.remove(territories, i)
+                break
+            end
+        end
+
+        Wait(500)
+        TriggerClientEvent('tomic_territories:updateTerritories', -1, territories)
+        xPlayer.showNotification('devTomic | Territory deleted!')
     end)
 end)
 
@@ -122,15 +135,12 @@ AddEventHandler('tomic_territories:captureServer', function(id, job, label, name
         end
     end
 
-    for k, v in pairs(territories) do
-        if v.id == id then
-            v.isTaking, v.isCooldown = true, true
-            TriggerClientEvent('tomic_territories:updateTerritories', -1, territories)
-            TriggerClientEvent('tomic_territories:updateBlips', -1, id, job, label)
-            TriggerClientEvent('tomic_territories:captureProgress', source, k, territories[k])
-            print(GetPlayerName(xPlayer.source) .. ' started capturing: ' .. name)
-        end
-    end
+    local currentTerritory = territories[id]
+    currentTerritory.isTaking, currentTerritory.isCooldown = true, true
+    TriggerClientEvent('tomic_territories:updateTerritories', -1, territories)
+    TriggerClientEvent('tomic_territories:updateBlips', -1, id, job, label)
+    TriggerClientEvent('tomic_territories:captureProgress', source, id, currentTerritory)
+    print(GetPlayerName(xPlayer.source) .. ' started capturing: ' .. name)
 end)
 
 RegisterNetEvent('tomic_territories:sellDealer')
@@ -179,43 +189,40 @@ end)
 
 RegisterNetEvent('tomic_territories:captureComplete')
 AddEventHandler('tomic_territories:captureComplete', function(terId, newOwner, newLabel, previousOwner)
-    for i, v in pairs(territories) do
-        if v.id == terId then
-            v.isTaking, v.owner, v.label = false, newOwner, newLabel
+    local currentTerritory = territories[terId]
+    currentTerritory.isTaking, currentTerritory.owner, currentTerritory.label = false, newOwner, newLabel
 
-            MySQL.query('UPDATE tomic_territories SET owner = ?, label = ? WHERE id = ?', { newOwner, newLabel, terId })
+    MySQL.query(queries.UPDATE_TERRITORY, { newOwner, newLabel, terId })
 
-            if shared.rewards.on then
-                TriggerEvent('tomic_territories:rewardPlayers', newOwner, v.name)
-            end
-
-            if shared.rankings then
-                MySQL.query('SELECT * FROM jobs WHERE name IN (@prevOwner, @newOwner)', { ['@prevOwner'] = previousOwner, ['@newOwner'] = newOwner }, function(results)
-                    for i = 1, #results do
-                        local result = results[i]
-                        local name = result.name
-                        local points = result.totalPoints
-                    
-                        if name == previousOwner then
-                            points = points - 2
-                        elseif name == newOwner then
-                            points = points + 3
-                        end
-                    
-                        MySQL.query('UPDATE jobs SET weeklyPoints = @points, monthlyPoints = @points, totalPoints = @points WHERE name = @name', { ['@points'] = points, ['@name'] = name })
-                    end
-                end)
-            end
-
-            TriggerClientEvent('tomic_territories:updateTerritories', -1, territories)
-
-            Wait(shared.cooldown * 60000)
-
-            v.isCooldown = false
-
-            TriggerClientEvent('tomic_territories:updateTerritories', -1, territories)
-        end
+    if shared.rewards.on then
+        TriggerEvent('tomic_territories:rewardPlayers', newOwner, currentTerritory.name)
     end
+
+    if shared.rankings then
+        MySQL.query(queries.SELECT_PREPARE_POINTS, { previousOwner, newOwner }, function(results)
+            for i = 1, #results do
+                local result = results[i]
+                local name = result.name
+                local points = result.totalPoints
+            
+                if name == previousOwner then
+                    points = points - 2
+                elseif name == newOwner then
+                    points = points + 3
+                end
+            
+                MySQL.query(queries.UPDATE_POINTS, { points, name })
+            end
+        end)
+    end
+
+    TriggerClientEvent('tomic_territories:updateTerritories', -1, territories)
+
+    Wait(shared.cooldown * 60000)
+
+    currentTerritory.isCooldown = false
+
+    TriggerClientEvent('tomic_territories:updateTerritories', -1, territories)
 end)
 
 RegisterNetEvent('tomic_territories:rewardPlayers')
@@ -232,27 +239,24 @@ end)
 
 RegisterNetEvent('tomic_territories:endCapturing')
 AddEventHandler('tomic_territories:endCapturing', function(id)
-    for i, v in pairs(territories) do
-        if v.id == id then
-            v.isTaking = false
-            TriggerClientEvent('tomic_territories:updateTerritories', -1, territories)
+    local currentTerritory = territories[id]
+    currentTerritory.isTaking = false
+    TriggerClientEvent('tomic_territories:updateTerritories', -1, territories)
 
-            Wait(shared.cooldown * 60000)
+    Wait(shared.cooldown * 60000)
 
-            v.isCooldown = false
-            TriggerClientEvent('tomic_territories:updateTerritories', -1, territories)
-        end
-    end
+    currentTerritory.isCooldown = false
+    TriggerClientEvent('tomic_territories:updateTerritories', -1, territories)
 end)
 
 if shared.rankings then
     function Reset(d, h, m)
-        if d == 1 then
-            MySQL.query('UPDATE jobs SET weeklyPoints = @points', { ['@points'] = 0 })
+        if d == 1 and h == 0 and m == 0 then
+            MySQL.query(queries.UPDATE_RESET_POINTS)
         end
     end
 
-    TriggerEvent('cron:runAt', 06, 00, Reset)
+    TriggerEvent('cron:runAt', 0, 0, Reset)
 end
 
 function inArray(array, value)
@@ -273,8 +277,7 @@ function checkForUpdates()
         end
 
         local returnedData = json.decode(response)
-        local latestVersion = returnedData.tag_name
-        local downloadLink = returnedData.html_url
+        local latestVersion, downloadLink = returnedData.tag_name, returnedData.html_url
 
         if currentVersion == latestVersion then
             return print('devTomic | You are using the latest version of ' .. GetCurrentResourceName())

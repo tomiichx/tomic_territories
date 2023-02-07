@@ -6,7 +6,7 @@ lua54 'yes'
 author 'tomiichx'
 description 'Territory System for Gangs'
 
-version 'v2.0'
+version 'v2.0.1'
 
 shared_scripts {
   '@es_extended/imports.lua',
