@@ -1,0 +1,640 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap');
+
+* {
+    padding: 0;
+    margin: 0;
+    user-select: none;
+}
+
+*:focus {
+    outline: none;
+}
+/* Scrollbar */
+
+::-webkit-scrollbar-track
+{
+	background-color: #1A1C1F;
+}
+
+::-webkit-scrollbar
+{
+	width: 5px;
+	background-color: #1A1C1F;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb
+{
+	background-color: #313438;
+    border-radius: 10px;
+
+}
+
+body {
+    background: transparent !important;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-family: 'Roboto', sans-serif;
+}
+
+/* font classes */
+
+.very-small-txt {
+    font-size:14px;
+}
+
+.small-txt {
+    font-size:16px;
+}
+
+.medium-txt {
+    font-size:20px;
+}
+
+.big-txt {
+    font-size:24px;
+}
+
+.txt-underline {
+    text-decoration: underline;
+}
+
+.font-light {
+    color: #fcfcfc;
+}
+
+.font-dark {
+    color: #636363;
+}
+
+.font-darker {
+    color: #8A8A8B;
+}
+
+.font-red {
+    color: #FF7474;
+}
+
+.font-bold {
+    font-weight: 700;
+}
+
+.font-black {
+    font-weight: 900;
+}
+
+
+
+/* tablet */
+
+.tablet {
+    display: none;
+    position: relative;
+    width: 1280px;
+    height: 900px;
+    background-image: linear-gradient(180deg, #000000, #212224);
+    border-radius: 70px;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+.tablet > .inside {
+    overflow-x: hidden;
+    overflow-y: auto;
+    position: relative;
+    border-radius: 10px;
+    width: 1167px;
+    height: 80%;
+    background-image: linear-gradient(90deg, #0D1116, #17191C);
+}
+
+.home-btn {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(to bottom, #47484B, rgba(71,72,75,0.64));
+    position: absolute;
+    bottom: 15px;
+    border-radius: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border:none;
+    transition: background 1s;
+}
+
+/*.home-btn:hover {
+    background: linear-gradient(to top, #47484B, rgba(71,72,75,0.64));
+}*/
+
+.camera {
+    width: 12px;
+    height: 12px;
+    background-color: #292929;
+    position: absolute;
+    top: 35px;
+    border-radius: 100%;
+}
+
+.home-btn img {
+    width: 60%;
+    height: auto;
+}
+
+/* wrappers */
+
+.navbar-wrapper {
+    position: sticky;
+    top:0;
+    width: 300px;
+    height: 100%;
+    background: linear-gradient(90deg, rgba(35,38,41,1), rgba(0,0,0,0));
+    float: left;
+    z-index: 2;
+}
+
+.wrapper {
+    width: calc(100% - 300px);
+    min-height: 100%;
+    float: right;
+}
+
+/* wrapper content */
+
+.bg-txt {
+    left:10px;
+    top:5px;
+    position:absolute;
+    font-size: 100px;
+    color: #ffffff;
+    opacity: 0.03;
+    font-weight: 700;
+    z-index: 0;
+}
+
+.menu > button {
+    padding: 3px;
+    border:none;
+    background: transparent;
+    position: relative;
+    transition: color 0.2s;
+}
+
+.menu > button:hover {
+    color: #ffffff
+}
+
+.menu-focus-disabled {
+    position: absolute;
+    padding: 1px 8px;
+    top:50%;
+    left: -100px;
+    background-color: white;
+    animation-name: menu-focus-disabled;
+    animation-duration: 0.8s;
+}
+
+.menu-focus {
+    position: absolute;
+    padding: 1px 8px;
+    top:50%;
+    left: -15px;
+    background-color: white;
+    animation-name: menu-focus;
+    animation-duration: 0.8s;
+}
+
+.info {
+    margin-top: 70px !important;
+}
+
+.info > h1 {
+    font-size: 16px;
+    color: #fcfcfc;
+    opacity: 0.6;
+    line-height: 33px;
+}
+
+.info > p {
+    font-size: 14px;
+    color: #fcfcfc6c;
+    opacity: 0.6;
+    line-height: 15px;
+}
+
+.info > p span {
+    color: #fcfcfc;
+}
+
+.side-menu-bottom {
+    position: absolute;
+    bottom: 5px;
+}
+
+.actions button {
+    background: transparent;
+    border: none;
+    width: auto;
+    font-size:16px;
+    transition: opacity 0.2s;
+}
+
+.actions button:hover {
+    opacity: 0.7;
+}
+
+.font-red {
+    color: #FF7474;
+}
+
+/* Wrapper */
+
+.wrapper .inside > .left, .wrapper .inside > .right {
+    z-index: 2;
+    min-height: 710px;
+}
+
+/* announces */
+
+.announces-wrapper {
+    height: 660px;
+    padding-right: 10px;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.announce-box {
+    background: #232629;
+    color: #959595;
+}
+
+.announce-box h1 {
+    color: #fcfcfc;
+    font-size: 18px;
+    padding: 25px 25px 0 20px;
+    line-height: 26px;
+}
+
+.announce-box h2 {
+    color: #636363;
+    font-size: 14px;
+    padding: 0 0 5px 20px;
+}
+
+.announce-box h2 > span {
+    padding-left:5px;
+}
+
+.announce-box p {
+    color: #959595;
+    font-size: 16px;
+    line-height: 25px;
+    padding: 0 20px 0 20px;
+    overflow: hidden;
+    max-height: 200px;
+    transition: max-height 0.6s;
+}
+
+.announce-box div {
+    width: 100%;
+    height: 35px;
+    margin-bottom: 25px;
+}
+
+.announce-box button {
+    width: auto;
+    background: transparent;
+    border: none;
+    padding: 0 20px 0 0;
+    font-size: 14px;
+    color: #fcfcfc;
+    float: right;
+}
+
+
+#new-announce {
+    background: none;
+    border: none;
+    color: #9B9B9B;
+    float: right;
+    padding-top: 11px;
+    transition: color 0.2s;
+}
+
+#new-announce:hover {
+    color: #fcfcfc;
+}
+
+/* Teritories */
+.header-btn-focus {
+    width: auto;
+    border: none;
+    background: transparent;
+    color: #fcfcfc;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.header-btn {
+    width: auto;
+    border: none;
+    background: transparent;
+    color: #616161;
+    font-size: 18px;
+    transition: color 0.2s;
+}
+
+.header-btn:hover {
+    color: #fcfcfc;
+}
+
+.teritory-wrapper {
+    background: #232629;
+    width: 100%;
+    min-height: 380px;
+    max-height: 380px;
+    overflow-y: auto;
+}
+
+#teritories > .item {
+    width: 100%;
+    height: 90px;
+    color: #fcfcfc;
+    background-position: top left;
+    background-size: cover;
+    background-repeat: no-repeat;
+}
+
+#teritories > .item h1 {
+    font-size: 20px;
+    padding-top: 10px;
+    padding-left: 10px;
+}
+
+#teritories > .item h1 > span {
+    font-size: 14px;
+    opacity: 0.7;
+}
+
+#teritories > .item p {
+    font-size: 14px;
+    padding-left: 10px;
+    opacity: 0.7;
+    line-height: 0px;
+}
+
+#teritories > .item p:nth-child(2) {
+    padding-top: 5px;
+}
+
+/* Input container */
+.inputs {
+    position: absolute;
+    background-image: linear-gradient(90deg, #0D1116, #17191C);
+    width: 100%;
+    height: 100%;
+    z-index: 100;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    animation-name: height;
+    animation-duration: 0.5s;
+}
+
+.inputs .close-input {
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    background: transparent;
+    border: none;
+    color: #636363;
+    font-size:20px;
+}
+
+.inputs .close-input:hover {
+    color: #d1d1d1;
+}
+
+.inputs .close-input:focus {
+    outline: none;
+}
+
+.inputs h1 {
+    color: #fcfcfc;
+    font-size: 18px;
+    margin-bottom: 1em;
+}
+
+.inputs div {
+    width: 500px;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.inputs div > input {
+    color: #fcfcfc;
+    background-color: #2C3034;
+    border: none;
+    padding: 10px 10px;
+}
+
+.inputs div > input[type='range'] {
+    color: #fcfcfc;
+    background-color: #2C3034;
+    border: none;
+    padding: 20px 0;
+}
+
+.inputs div > input:focus {
+    outline: none;
+}
+
+.inputs div > textarea {
+    color: #fcfcfc;
+    padding: 10px 10px;
+    width: 100%;
+    height: 100%;
+    background-color: #2C3034;
+    min-height: 100px;
+    max-height: 300px;
+    border: none;
+    margin-top:1em;
+}
+
+.inputs div > textarea:focus {
+    outline: none;
+}
+
+.inputs div > .primary-btn {
+    color: #fcfcfc;
+    background-color: #0e46ff;
+    border: none;
+    margin-top: 1em;
+    padding: 10px 15px;
+}
+
+.inputs div > .secondary-btn {
+    color: #fcfcfc;
+    background-color: #ff1414;
+    border: none;
+    margin-top: 1em;
+    padding: 10px 15px;
+}
+
+.inputs div > .primary-btn:focus, .inputs div > .secondary-btn:focus {
+    outline: none;
+}
+
+.scoreboard-container {
+    position: absolute;
+    top:0;
+    left: 50%;
+    transform: translateX(-50%);
+    height: auto;
+    width: auto;
+    color: #fcfcfc;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+
+.scoreboard {
+	display: none;
+    position: relative;
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 300;
+    color: #CCCCCC;
+    animation-name: scoreboard-reveal;
+    animation-duration: 0.6s;
+}
+
+.scoreboard h1 {
+    position: absolute;
+    top: 7px;
+    left: 52%; /* heroin - 46.5, blackmarker 40.05%, 46.5% heroin */;
+    transform: translate(-50%);
+    z-index: 9999;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.scoreboard p {
+    position: absolute;
+    top: 38px;
+    left: 50%;
+    transform: translateX(-40%);
+    z-index: 9999;
+    font-size: 16px;
+    color: #E5E5E5;
+}
+
+.scoreboard h2 {
+    position: absolute;
+    top: 10px;
+    left: 20.5%;
+    z-index: 9999;
+    font-size: 16px;
+}
+
+.scoreboard h3 {
+    position: absolute;
+    top: 10px;
+    right: 16%;
+    z-index: 9999;
+    font-size: 16px;
+}
+
+.scoreboard span {
+    font-weight: 700;
+    color: #E5E5E5;
+}
+
+/* Ranked list */
+
+.rank-header {
+    display: flex;
+    height: 57px;
+    background-color: #2D0BFF;
+}
+
+
+.rank-header > div h1 {
+    margin-top: 14px;
+    line-height: 6px;
+}
+
+
+.rank-header > div p {
+    opacity: 0.6;
+    text-align: left;
+}
+
+.rank-list {
+    height: 57px;
+    border-bottom: 0.5px solid #767879;
+    scroll-behavior: smooth;
+}
+
+.rank-list img {
+    float: left;
+    padding-top: 10px;
+}
+
+.rank-list p {
+    float: left;
+    padding-top: 16px;
+    color: #A5A5A5;
+    font-weight: 700;
+}
+
+.rank-list h1 {
+    float: left;
+    padding-top: 17px;
+    font-weight: 700;
+    color: #fcfcfc;
+}
+
+.rank-list h2 {
+    float: right;
+    padding-top: 17px;
+    font-weight: 300;
+    color: #A5A5A5;
+}
+
+/* Animations */
+
+@keyframes menu-focus {
+    from {
+        left: -100px;
+    }
+    to {
+        left: -15px;
+    }
+}
+
+@keyframes menu-focus-disabled {
+    from {
+        left: -15px;
+    }
+    to {
+        left: -100px;
+    }
+}
+
+@keyframes scoreboard-reveal {
+    from {
+        top: -200px;
+    } to {
+        top: 0;
+    }
+}
+
+@keyframes height {
+    from {
+        height: 0;
+    } to {
+        height: 100%;
+    }
+}

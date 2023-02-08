@@ -1,0 +1,92 @@
+/* let's adjust things for a tablet */
+
+@media only screen and (max-width: 1322px) {
+    .tablet {
+        width: 1000px;
+        height: 678px;
+    }
+
+    .tablet > .inside {
+        width: 900px;
+    }
+
+    /* SIDE NAVBAR */
+
+    .navbar-wrapper {
+        width: 230px;
+    }
+
+    .wrapper {
+        width: calc(100% - 230px);
+    }
+
+    .info {
+        margin-top:20px !important;
+    }
+    
+    .info > p {
+        line-height: 8px;
+    }
+
+    .big-txt {
+        font-size: 18px;
+    }
+
+    .actions button {
+        font-size:15px;
+    }
+
+    /* END OF SIDE NAVBAR */
+
+    #new-announce {
+        padding-top: 4px;
+    }
+}
+
+@media only screen and (max-width: 1199px) {
+    .wrapper .inside > .left, .wrapper .inside > .right {
+        min-height: auto;
+    }
+    .announces-wrapper {
+        height: auto;
+    }
+}
+
+@media only screen and (max-width: 1000px) {
+    .tablet {
+        width: 770px;
+        height: 578px;
+    }
+
+    .tablet > .inside {
+        width: 670px;
+    }
+
+    /* SIDE NAVBAR */
+
+    .navbar-wrapper {
+        width: 200px;
+    }
+
+    .wrapper {
+        width: calc(100% - 200px);
+    }
+
+    .info > h1 {
+        font-size: 14px;
+        line-height: 33px;
+    }
+    .info > p {
+        line-height: 0;
+    }
+
+    .big-txt {
+        font-size: 15px;
+    }
+
+    /* END OF NAVBAR */
+
+    #new-announce {
+        padding-top: 2px;
+    }
+}
