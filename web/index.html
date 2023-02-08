@@ -1,67 +1,116 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Teritorije NUI</title>
-    <link rel="stylesheet" type="text/css" href="style.css">
-    <link rel="stylesheet" type="text/css" href="responsive.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha512-Fo3rlrZj/k7ujTnHg4CGR2D7kSs0v4LLanw2qksYuRlEzO+tcaEPQogQ0KaoGN26/zrn20ImR1DfuLWnOo7aBA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+	<head>
+		<meta charset="UTF-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Territories UI</title>
+		<link rel="stylesheet" type="text/css" href="style.css" />
+		<link rel="stylesheet" type="text/css" href="responsive.css" />
+		<link
+			rel="stylesheet"
+			href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+			integrity="sha512-Fo3rlrZj/k7ujTnHg4CGR2D7kSs0v4LLanw2qksYuRlEzO+tcaEPQogQ0KaoGN26/zrn20ImR1DfuLWnOo7aBA=="
+			crossorigin="anonymous"
+			referrerpolicy="no-referrer"
+		/>
+		<link
+			rel="stylesheet"
+			href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
+			integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3"
+			crossorigin="anonymous"
+		/>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+	</head>
+	<body>
+		<div class="scoreboard-container">
+			<div class="scoreboard" id="scoreboard">
+				<h1 id="scoreboard-territory">TERRITORY NAME</h1>
+				<p id="scoreboard-status">CAPTURING...</p>
+				<h2 class="attacker"><i class="fas fa-shield-alt"></i> <span id="scoreboard-defenders_count">12</span></h2>
+				<h3 class="defender"><span id="scoreboard-attackers_count">8</span><i class="fas fa-khanda"></i></h3>
+				<svg width="794" height="94" viewBox="0 0 794 94" fill="none" xmlns="http://www.w3.org/2000/svg">
+					<g opacity="0.9">
+						<g filter="url(#filter0_d_177_119)">
+							<path
+								d="M124 0H700V0C700 23.7482 680.748 43 657 43H167C143.252 43 124 23.7482 124 0V0Z"
+								fill="#0F1A1F"
+							/>
+							<path
+								d="M125.527 1.5H698.473C697.684 23.725 679.418 41.5 657 41.5H167C144.582 41.5 126.316 23.725 125.527 1.5Z"
+								stroke="#1C2C33"
+								stroke-width="3"
+							/>
+						</g>
+						<path d="M414 94L324.799 0.250002L503.201 0.249986L414 94Z" fill="#1D2E35" />
+						<path d="M414 86L336.058 4.25L491.942 4.24999L414 86Z" fill="#101B1F" />
+						<path d="M414 86L336.058 4.25L491.942 4.24999L414 86Z" fill="#101B1F" />
+						<path d="M414 72L355.976 11.25L472.024 11.25L414 72Z" fill="#101B1F" />
+						<path d="M414 72L355.976 11.25L472.024 11.25L414 72Z" fill="#1D2E35" />
+						<g filter="url(#filter1_d_177_119)">
+							<path
+								d="M283 54C283 44.0589 291.059 36 301 36H542C543.657 36 545 37.3431 545 39V48C545 57.9411 536.941 66 527 66H286C284.343 66 283 64.6569 283 63V54Z"
+								fill="#101B1F"
+							/>
+							<path
+								d="M301 37.5H542C542.828 37.5 543.5 38.1716 543.5 39V48C543.5 57.1127 536.113 64.5 527 64.5H286C285.172 64.5 284.5 63.8284 284.5 63V54C284.5 44.8873 291.887 37.5 301 37.5Z"
+								stroke="#1C2C33"
+								stroke-width="3"
+							/>
+						</g>
+					</g>
+					<defs>
+						<filter
+							id="filter0_d_177_119"
+							x="120"
+							y="0"
+							width="584"
+							height="51"
+							filterUnits="userSpaceOnUse"
+							color-interpolation-filters="sRGB"
+						>
+							<feFlood flood-opacity="0" result="BackgroundImageFix" />
+							<feColorMatrix
+								in="SourceAlpha"
+								type="matrix"
+								values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
+								result="hardAlpha"
+							/>
+							<feOffset dy="4" />
+							<feGaussianBlur stdDeviation="2" />
+							<feComposite in2="hardAlpha" operator="out" />
+							<feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0" />
+							<feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_177_119" />
+							<feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_177_119" result="shape" />
+						</filter>
+						<filter
+							id="filter1_d_177_119"
+							x="279"
+							y="36"
+							width="270"
+							height="38"
+							filterUnits="userSpaceOnUse"
+							color-interpolation-filters="sRGB"
+						>
+							<feFlood flood-opacity="0" result="BackgroundImageFix" />
+							<feColorMatrix
+								in="SourceAlpha"
+								type="matrix"
+								values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
+								result="hardAlpha"
+							/>
+							<feOffset dy="4" />
+							<feGaussianBlur stdDeviation="2" />
+							<feComposite in2="hardAlpha" operator="out" />
+							<feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0" />
+							<feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_177_119" />
+							<feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_177_119" result="shape" />
+						</filter>
+					</defs>
+				</svg>
+			</div>
+		</div>
 
-</head>
-<body>
-    <div class="scoreboard-container">
-        <div class="scoreboard" id='scoreboard'> 
-            <h1 id="ime-teritorije">HEROIN</h1>
-            <p id="scoreboard-session">NAPAD JE U TOKU</p>
-            <h2 class="attacker"><i class="fas fa-shield-alt"></i> <span id="scoreboard-defend">12</span></h2>
-            <h3 class="defender"><span id="scoreboard-attack">8</span><i class="fas fa-khanda"></i></h3>
-            <svg width="794" height="94" viewBox="0 0 794 94" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <g opacity="0.9">
-                    <g filter="url(#filter0_d_177_119)">
-                        <path d="M124 0H700V0C700 23.7482 680.748 43 657 43H167C143.252 43 124 23.7482 124 0V0Z" fill="#0F1A1F"/>
-                        <path d="M125.527 1.5H698.473C697.684 23.725 679.418 41.5 657 41.5H167C144.582 41.5 126.316 23.725 125.527 1.5Z" stroke="#1C2C33" stroke-width="3"/>
-                    </g>
-                    <path d="M414 94L324.799 0.250002L503.201 0.249986L414 94Z" fill="#1D2E35"/>
-                    <path d="M414 86L336.058 4.25L491.942 4.24999L414 86Z" fill="#101B1F"/>
-                    <path d="M414 86L336.058 4.25L491.942 4.24999L414 86Z" fill="#101B1F"/>
-                    <path d="M414 72L355.976 11.25L472.024 11.25L414 72Z" fill="#101B1F"/>
-                    <path d="M414 72L355.976 11.25L472.024 11.25L414 72Z" fill="#1D2E35"/>
-                    <g filter="url(#filter1_d_177_119)">
-                        <path d="M283 54C283 44.0589 291.059 36 301 36H542C543.657 36 545 37.3431 545 39V48C545 57.9411 536.941 66 527 66H286C284.343 66 283 64.6569 283 63V54Z" fill="#101B1F"/>
-                        <path d="M301 37.5H542C542.828 37.5 543.5 38.1716 543.5 39V48C543.5 57.1127 536.113 64.5 527 64.5H286C285.172 64.5 284.5 63.8284 284.5 63V54C284.5 44.8873 291.887 37.5 301 37.5Z" stroke="#1C2C33" stroke-width="3"/>
-                    </g>
-                </g>
-                <defs>
-                    <filter id="filter0_d_177_119" x="120" y="0" width="584" height="51" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
-                        <feFlood flood-opacity="0" result="BackgroundImageFix"/>
-                        <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
-                        <feOffset dy="4"/>
-                        <feGaussianBlur stdDeviation="2"/>
-                        <feComposite in2="hardAlpha" operator="out"/>
-                        <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0"/>
-                        <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_177_119"/>
-                        <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_177_119" result="shape"/>
-                    </filter>
-                    <filter id="filter1_d_177_119" x="279" y="36" width="270" height="38" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
-                        <feFlood flood-opacity="0" result="BackgroundImageFix"/>
-                        <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
-                        <feOffset dy="4"/>
-                        <feGaussianBlur stdDeviation="2"/>
-                        <feComposite in2="hardAlpha" operator="out"/>
-                        <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0"/>
-                        <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_177_119"/>
-                        <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_177_119" result="shape"/>
-                    </filter>
-                </defs>
-            </svg>
-                
-        </div>
-    </div>
-
-    <script src="script.js"></script>
-</body>
+		<script src="script.js"></script>
+	</body>
 </html>
