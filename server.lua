@@ -206,26 +206,13 @@ AddEventHandler('tomic_territories:captureComplete', function(terId, newOwner, n
 
             for i = 1, #rowsChanged do
                 local result = rowsChanged[i]
-                local name = result.name
-                local weeklyPoints = result.weeklyPoints
-                local monthlyPoints = result.monthlyPoints
-                local totalPoints = result.totalPoints
+                local name, weeklyPoints, monthlyPoints, totalPoints = result.name, result.weeklyPoints, result.monthlyPoints, result.totalPoints
+
+                weeklyPoints = (name == previousOwner) and weeklyPoints - 2 or (name == newOwner) and weeklyPoints + 3 or weeklyPoints
+                monthlyPoints = (name == previousOwner) and monthlyPoints - 2 or (name == newOwner) and monthlyPoints + 3 or monthlyPoints
+                totalPoints = (name == previousOwner) and totalPoints - 2 or (name == newOwner) and totalPoints + 3 or totalPoints
                 
-                (name == previousOwner) and (
-                    weeklyPoints = weeklyPoints - 2;
-                    monthlyPoints = monthlyPoints - 2;
-                    totalPoints = totalPoints - 2
-                )
-
-                (name == newOwner) and (
-                    weeklyPoints = weeklyPoints + 3;
-                    monthlyPoints = monthlyPoints + 3;
-                    totalPoints = totalPoints + 3
-                )
-
-                local queryData = { weeklyPoints, monthlyPoints, totalPoints, name }
-
-                MySQL.query(queries.UPDATE_POINTS, queryData)
+                MySQL.query(queries.UPDATE_POINTS, { weeklyPoints, monthlyPoints, totalPoints, name })
             end
         end)
     end
