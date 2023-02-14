@@ -199,19 +199,20 @@ AddEventHandler('tomic_territories:captureComplete', function(terId, newOwner, n
     end
 
     if shared.rankings then
-        MySQL.query(queries.SELECT_PREPARE_POINTS, { previousOwner, newOwner }, function(results)
-            for i = 1, #results do
-                local result = results[i]
-                local name = result.name
-                local points = result.totalPoints
-            
-                if name == previousOwner then
-                    points = points - 2
-                elseif name == newOwner then
-                    points = points + 3
-                end
-            
-                MySQL.query(queries.UPDATE_POINTS, { points, name })
+        MySQL.query(queries.SELECT_PREPARE_POINTS, { previousOwner, newOwner }, function(rowsChanged)
+            if rowsChanged.affectedRows == 0 then
+                return print('devTomic | An error occured while updating points!')
+            end
+
+            for i = 1, #rowsChanged do
+                local result = rowsChanged[i]
+                local name, weeklyPoints, monthlyPoints, totalPoints = result.name, result.weeklyPoints, result.monthlyPoints, result.totalPoints
+
+                weeklyPoints = (name == previousOwner) and weeklyPoints - 2 or (name == newOwner) and weeklyPoints + 3 or weeklyPoints
+                monthlyPoints = (name == previousOwner) and monthlyPoints - 2 or (name == newOwner) and monthlyPoints + 3 or monthlyPoints
+                totalPoints = (name == previousOwner) and totalPoints - 2 or (name == newOwner) and totalPoints + 3 or totalPoints
+                
+                MySQL.query(queries.UPDATE_POINTS, { weeklyPoints, monthlyPoints, totalPoints, name })
             end
         end)
     end
