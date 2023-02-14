@@ -211,7 +211,7 @@ AddEventHandler('tomic_territories:captureComplete', function(terId, newOwner, n
                     points = points + 3
                 end
             
-                MySQL.query(queries.UPDATE_POINTS, { points, name })
+                MySQL.query(queries.UPDATE_POINTS, { points, points, points, name })
             end
         end)
     end
