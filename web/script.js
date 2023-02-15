@@ -1,21 +1,31 @@
-$(window).on("message", function (event) {
-	const data = event.data;
-	switch (data.request) {
-		case "show":
-			$("#scoreboard").show()
-				.find("#scoreboard-territory").html(data.territory_name).end()
-				.find("#scoreboard-status").html(data.territory_status).end()
-				.find("#scoreboard-attackers_count").html(data.territory_attackers_count).end()
-				.find("#scoreboard-defenders_count").html(data.territory_defenders_count);
-			break;
-		case "update":
-			$("#scoreboard")
-				.find("#scoreboard-status").html(data.territory_status).end()
-				.find("#scoreboard-attackers_count").html(data.territory_attackers_count).end()
-				.find("#scoreboard-defenders_count").html(data.territory_defenders_count);
-			break;
-		case "hide":
-			$("#scoreboard").hide();
-			break;
-	}
+$(function () {
+	$(window).on("message", function (event) {
+		const data = event.originalEvent.data;
+		const territoryData = data.data[0];
+		
+		let territoryAttackers = 0;
+		let territoryDefenders = 0;
+		data.data.forEach((attender) => {
+			if (attender.isPlayerDefender) {
+				territoryDefenders++;
+			} else {
+				territoryAttackers++;
+			}
+		});
+
+		switch (data.action) {
+			case "showUI":
+				$("#scoreboard").show();
+				$("#scoreboard-territory").html(territoryData.territoryName);
+				$("#scoreboard-status").html(territoryData.territoryStatus);
+				$("#scoreboard-attackers_count").html(territoryAttackers);
+				$("#scoreboard-defenders_count").html(territoryDefenders);
+				break;
+			case "hideUI":
+				$("#scoreboard").fadeOut(500, () => {
+					$("#scoreboard").hide();
+				});
+				break;
+		}
+	});
 });
