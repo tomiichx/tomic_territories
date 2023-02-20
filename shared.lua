@@ -10,6 +10,8 @@ shared = {
         item = 'black_money', -- item name
         count = 1000 -- amount
     },
+    attackerMessage = 'Capture in progress!', -- NUI Message (Will be moved to translations)
+    defenderMessage = 'Defend your territory!', -- NUI Message (Will be moved to translations)
     itemsToBuy = { -- buyable items if territory type is 'market'
         ['bread'] = {
             label = '🍞 | Bread',

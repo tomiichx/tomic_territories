@@ -1,11 +1,11 @@
 $(function () {
 	$(window).on("message", function (event) {
-		const data = event.originalEvent.data;
-		const territoryData = data.data[0];
+		const eventData = event.originalEvent.data;
+		const territoryData = eventData.data[0];
 		
 		let territoryAttackers = 0;
 		let territoryDefenders = 0;
-		data.data.forEach((attender) => {
+		eventData.data.forEach((attender) => {
 			if (attender.isPlayerDefender) {
 				territoryDefenders++;
 			} else {
@@ -13,7 +13,7 @@ $(function () {
 			}
 		});
 
-		switch (data.action) {
+		switch (eventData.action) {
 			case "showUI":
 				$("#scoreboard").show();
 				$("#scoreboard-territory").html(territoryData.territoryName);

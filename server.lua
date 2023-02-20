@@ -119,30 +119,31 @@ AddEventHandler('tomic_territories:deleteTerritory', function(territoryName)
     end)
 end)
 
-local function updateAttenders(id, identifier, job, inTerritory)
+local function updateAttenders(id, identifier, job, inTerritory, isDead)
     local territory = territories[id]
     if not territory or not identifier or not shared.gangs[job] then return end
-    local attenders, found = territory.attenders, false
+    local attenders, found, isDefender = territory.attenders, false, territory.owner == job
 
     for i = 1, #attenders do
         if attenders[i].playerIdentifier == identifier then
             found = true
-            if not inTerritory then
+            if isDead or not inTerritory then
                 table.remove(attenders, i)
-                if source then TriggerClientEvent('tomic_territories:updateUI', source, 'hideUI', attenders) end
+                TriggerClientEvent('tomic_territories:updateUI', source, 'hideUI', attenders)
                 break
             end
         end
     end
 
-    if inTerritory and not found then
+    local territoryStatusMessage = isDefender and shared.defenderMessage or shared.attackerMessage
+    if inTerritory and not found and not isDead then
         table.insert(attenders, {
-            playerIdentifier = identifier, playerJob = job, isPlayerDefender = territory.owner == job,
-            requestUI = 'show', territoryName = territory.name, territoryStatus = 'Attack in progress!'
+            playerIdentifier = identifier, playerJob = job, isPlayerDefender = isDefender,
+            territoryName = territory.name, territoryStatus = territoryStatusMessage
         })
     end
 
-    for i = 1, #territory.attenders do
+    for i = 1, #attenders do
         local xPlayer = ESX.GetPlayerFromIdentifier(attenders[i].playerIdentifier)
         if xPlayer then TriggerClientEvent('tomic_territories:updateUI', xPlayer.source, 'showUI', attenders) end
     end
@@ -243,7 +244,7 @@ AddEventHandler('tomic_territories:captureComplete', function(terId, newOwner, n
                 weeklyPoints = (name == previousOwner) and weeklyPoints - 2 or (name == newOwner) and weeklyPoints + 3 or weeklyPoints
                 monthlyPoints = (name == previousOwner) and monthlyPoints - 2 or (name == newOwner) and monthlyPoints + 3 or monthlyPoints
                 totalPoints = (name == previousOwner) and totalPoints - 2 or (name == newOwner) and totalPoints + 3 or totalPoints
-                
+
                 MySQL.query(queries.UPDATE_POINTS, { weeklyPoints, monthlyPoints, totalPoints, name })
             end
         end)

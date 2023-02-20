@@ -6,7 +6,6 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>Territories UI</title>
 		<link rel="stylesheet" type="text/css" href="style.css" />
-		<link rel="stylesheet" type="text/css" href="responsive.css" />
 		<link
 			rel="stylesheet"
 			href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
@@ -21,15 +20,19 @@
 			crossorigin="anonymous"
 		/>
 		<script src="nui://game/ui/jquery.js" type="text/javascript"></script>
-    	<script src="script.js" type="text/javascript"></script>
+		<script src="script.js" type="text/javascript"></script>
 	</head>
 	<body>
 		<div class="scoreboard-container">
 			<div class="scoreboard" id="scoreboard">
 				<h1 id="scoreboard-territory">TERRITORY NAME</h1>
 				<p id="scoreboard-status">CAPTURING...</p>
-				<h2 class="attacker"><i class="fas fa-shield-alt"></i> <span id="scoreboard-defenders_count">12</span></h2>
-				<h3 class="defender"><span id="scoreboard-attackers_count">8</span><i class="fas fa-khanda"></i></h3>
+				<h2 class="defender">
+					<i class="fas fa-shield-alt"></i> <span id="scoreboard-defenders_count">12</span>
+				</h2>
+				<h3 class="attacker">
+					<span id="scoreboard-attackers_count">8</span> <i class="fas fa-khanda"></i>
+				</h3>
 				<svg width="794" height="94" viewBox="0 0 794 94" fill="none" xmlns="http://www.w3.org/2000/svg">
 					<g opacity="0.9">
 						<g filter="url(#filter0_d_177_119)">
