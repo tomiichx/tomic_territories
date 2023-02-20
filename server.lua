@@ -15,7 +15,7 @@ CreateThread(function()
         if data then
             territories = {}
             for i = 1, #data, 1 do
-                table.insert(territories, { id = data[i].id, name = data[i].name, owner = data[i].owner, radius = data[i].radius, label = data[i].label, type = data[i].type, coords = json.decode(data[i].coords), isTaking = false, progress = 0, isCooldown = false })
+                table.insert(territories, { id = data[i].id, name = data[i].name, owner = data[i].owner, radius = data[i].radius, label = data[i].label, type = data[i].type, coords = json.decode(data[i].coords), isTaking = false, progress = 0, isCooldown = false, attenders = {} })
                 exports.ox_inventory:RegisterStash('devTomic-Ter[' .. data[i].name .. '][' .. data[i].id .. ']', 'devTomic | Territory: ' .. data[i].name, 50, 100000)
                 print('devTomic | Registered stash: devTomic-' .. data[i].id .. ' | Territory: ' .. data[i].name .. '')
             end
@@ -91,7 +91,8 @@ AddEventHandler('tomic_territories:createTerritory', function(territoryInfo)
         end
 
         table.insert(territories, territory)
-        exports.ox_inventory:RegisterStash('devTomic-Ter[' .. territory.name .. '][' .. territory.id .. ']', 'devTomic | Territory: ' .. territory.name, 50, 100000)
+        exports.ox_inventory:RegisterStash('devTomic-Ter[' .. territory.name .. '][' .. territory.id .. ']',
+            'devTomic | Territory: ' .. territory.name, 50, 100000)
         TriggerClientEvent('tomic_territories:updateTerritories', -1, territories)
         xPlayer.showNotification('devTomic | Territory created!')
     end)
@@ -117,6 +118,38 @@ AddEventHandler('tomic_territories:deleteTerritory', function(territoryName)
         xPlayer.showNotification('devTomic | Territory deleted!')
     end)
 end)
+
+local function updateAttenders(id, identifier, job, inTerritory, isDead)
+    local territory = territories[id]
+    if not territory or not identifier or not shared.gangs[job] then return end
+    local attenders, found, isDefender = territory.attenders, false, territory.owner == job
+
+    for i = 1, #attenders do
+        if attenders[i].playerIdentifier == identifier then
+            found = true
+            if isDead or not inTerritory then
+                table.remove(attenders, i)
+                TriggerClientEvent('tomic_territories:updateUI', source, 'hideUI', attenders)
+                break
+            end
+        end
+    end
+
+    local territoryStatusMessage = isDefender and shared.defenderMessage or shared.attackerMessage
+    if inTerritory and not found and not isDead then
+        table.insert(attenders, {
+            playerIdentifier = identifier, playerJob = job, isPlayerDefender = isDefender,
+            territoryName = territory.name, territoryStatus = territoryStatusMessage
+        })
+    end
+
+    for i = 1, #attenders do
+        local xPlayer = ESX.GetPlayerFromIdentifier(attenders[i].playerIdentifier)
+        if xPlayer then TriggerClientEvent('tomic_territories:updateUI', xPlayer.source, 'showUI', attenders) end
+    end
+end
+RegisterNetEvent('tomic_territories:updateAttenders')
+AddEventHandler('tomic_territories:updateAttenders', updateAttenders)
 
 RegisterNetEvent('tomic_territories:captureServer')
 AddEventHandler('tomic_territories:captureServer', function(id, job, label, name, currentOwner)
@@ -211,7 +244,7 @@ AddEventHandler('tomic_territories:captureComplete', function(terId, newOwner, n
                 weeklyPoints = (name == previousOwner) and weeklyPoints - 2 or (name == newOwner) and weeklyPoints + 3 or weeklyPoints
                 monthlyPoints = (name == previousOwner) and monthlyPoints - 2 or (name == newOwner) and monthlyPoints + 3 or monthlyPoints
                 totalPoints = (name == previousOwner) and totalPoints - 2 or (name == newOwner) and totalPoints + 3 or totalPoints
-                
+
                 MySQL.query(queries.UPDATE_POINTS, { weeklyPoints, monthlyPoints, totalPoints, name })
             end
         end)

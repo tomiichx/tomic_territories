@@ -1,0 +1,89 @@
+@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap");
+
+* {
+	padding: 0;
+	margin: 0;
+	user-select: none;
+}
+
+*:focus {
+	outline: none;
+}
+
+body {
+	background: transparent !important;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	min-height: 100vh;
+	font-family: "Roboto", sans-serif;
+}
+
+.scoreboard-container {
+	position: absolute;
+	top: 0;
+	left: 50%;
+	transform: translateX(-50%);
+	height: auto;
+	width: auto;
+	color: #fcfcfc;
+}
+
+.scoreboard {
+	display: none;
+	position: relative;
+	font-weight: 300;
+	color: #cccccc;
+	animation-name: scoreboard-reveal;
+	animation-duration: 0.6s;
+}
+
+.scoreboard h1 {
+	position: absolute;
+	top: 7px;
+	left: 52%;
+	transform: translate(-50%);
+	z-index: 9999;
+	font-size: 20px;
+	font-weight: 700;
+}
+
+.scoreboard p {
+	position: absolute;
+	top: 38px;
+	left: 51%;
+	transform: translateX(-40%);
+	z-index: 9999;
+	font-size: 16px;
+	color: #e5e5e5;
+}
+
+.scoreboard h2 {
+	position: absolute;
+	top: 10px;
+	left: 20.5%;
+	z-index: 9999;
+	font-size: 16px;
+}
+
+.scoreboard h3 {
+	position: absolute;
+	top: 10px;
+	right: 16%;
+	z-index: 9999;
+	font-size: 16px;
+}
+
+.scoreboard span {
+	font-weight: 700;
+	color: #e5e5e5;
+}
+
+@keyframes scoreboard-reveal {
+	from {
+		top: -200px;
+	}
+	to {
+		top: 0;
+	}
+}

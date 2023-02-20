@@ -1,4 +1,4 @@
-local ESX, PlayerData, territories, headerBlips, circleBlips, progress = nil, {}, {}, {}, {}, 0
+local ESX, PlayerData, territories, headerBlips, circleBlips, progress, lastTerritory = nil, {}, {}, {}, {}, 0, nil
 
 CreateThread(function()
     ESX = exports['es_extended']:getSharedObject()
@@ -159,6 +159,40 @@ AddEventHandler('tomic_territories:deleteTerritory', function()
     TriggerServerEvent('tomic_territories:deleteTerritory', input[1])
 end)
 
+RegisterNetEvent('tomic_territories:updateUI')
+AddEventHandler('tomic_territories:updateUI', function(action, data)
+    SendNUIMessage({action = action, data = data })
+end)
+
+local function isInTerritory(isDead)
+    local playerPed = PlayerPedId()
+    local playerCoords, checkDead = GetEntityCoords(playerPed), isDead and true or false
+    for k, v in pairs(territories) do
+        local coords = vec3(v.coords.x, v.coords.y, v.coords.z)
+        local distance = #(playerCoords - coords)
+        if distance < tonumber(v.radius) and v.isTaking then
+            lastTerritory = v.id
+            TriggerServerEvent('tomic_territories:updateAttenders', lastTerritory, PlayerData.identifier, PlayerData.job.name, true, checkDead)
+            return true, k
+        end
+    end
+    if lastTerritory then
+        TriggerServerEvent('tomic_territories:updateAttenders', lastTerritory, PlayerData.identifier, PlayerData.job.name, false, false)
+        lastTerritory = nil
+    end
+    return false
+end
+
+CreateThread(function()
+    Wait(1000)
+    if PlayerData.job and shared.gangs[PlayerData.job.name] then
+        while true do
+            Wait(6000)
+            isInTerritory(IsEntityDead(PlayerPedId()))
+        end
+    end
+end)
+
 CreateThread(function()
     Wait(1000) -- Wait for everything to load before displaying the markers...
     local showUI
@@ -169,33 +203,35 @@ CreateThread(function()
         for k, v in pairs(territories) do
             local coords = vec3(v.coords.x, v.coords.y, v.coords.z)
             local distance = #(playerCoords - coords)
-            if PlayerData.job and shared.gangs[PlayerData.job.name] and distance <= tonumber(v.radius) then
-                sleepThread = false
-                DrawMarker(2, coords, 0.0, 0.0, 0.0, 0.0, 0, 0.0, 0.15, 0.15, 0.15, 200, 0, 50, 230, true, true, 2, true, false, false, false)
-                DrawMarker(1, coords, 0.0, 0.0, 0.0, 0.0, 0, 0.0, 0.25, 0.25, 0.02, 255, 255, 255, 255, false, true, 1, true, false, false, false)
-                if distance < 1.5 then
-                    if IsControlJustPressed(0, 38) then
-                        TriggerEvent('tomic_territories:infoMenu', {
-                            id = v.id,
-                            job = PlayerData.job.name,
-                            label = PlayerData.job.label,
-                            name = v.name,
-                            currentOwner = v.owner,
-                            terCoords = vec3(v.coords.x, v.coords.y, v.coords.z),
-                            taking = v.isTaking,
-                            cooldown = v.isCooldown,
-                            type = v.type
-                        })
-                    end
-                    if showUI ~= 0 then
-                        lib.showTextUI('[E] - Info | ' .. v.name .. '')
-                    elseif showUI ~= 0 and distance > 2.0 then
+            if PlayerData.job and shared.gangs[PlayerData.job.name] then
+                if distance < tonumber(v.radius) then
+                    sleepThread = false
+                    DrawMarker(2, coords, 0.0, 0.0, 0.0, 0.0, 0, 0.0, 0.15, 0.15, 0.15, 200, 0, 50, 230, true, true, 2, true, false, false, false)
+                    DrawMarker(1, coords, 0.0, 0.0, 0.0, 0.0, 0, 0.0, 0.25, 0.25, 0.02, 255, 255, 255, 255, false, true, 1, true, false, false, false)
+                    if distance < 1.5 then
+                        if IsControlJustPressed(0, 38) then
+                            TriggerEvent('tomic_territories:infoMenu', {
+                                id = v.id,
+                                job = PlayerData.job.name,
+                                label = PlayerData.job.label,
+                                name = v.name,
+                                currentOwner = v.owner,
+                                terCoords = vec3(v.coords.x, v.coords.y, v.coords.z),
+                                isTaking = v.isTaking,
+                                isCooldown = v.isCooldown,
+                                type = v.type
+                            })
+                        end
+                        if showUI ~= 0 then
+                            lib.showTextUI('[E] - Info | ' .. v.name .. '')
+                        elseif showUI ~= 0 and distance > 2.0 then
+                            showUI = nil
+                            lib.hideTextUI()
+                        end
+                    elseif distance > 2.0 then
                         showUI = nil
                         lib.hideTextUI()
                     end
-                elseif distance > 2.0 then
-                    showUI = nil
-                    lib.hideTextUI()
                 end
             end
         end
@@ -322,8 +358,7 @@ end)
 
 RegisterNetEvent('tomic_territories:buyList')
 AddEventHandler('tomic_territories:buyList', function(terData)
-    local buyList = {}
-    terData = terData.data
+    local buyList, terData = {}, terData.data
     if PlayerData.job.name ~= terData.currentOwner then
         return ESX.ShowNotification('devTomic | You do not own this territory!')
     end
@@ -360,20 +395,26 @@ end)
 
 RegisterNetEvent('tomic_territories:captureClient')
 AddEventHandler('tomic_territories:captureClient', function(terData)
-    terData = terData.currentTerritory
-    if terData.job == terData.currentOwner then
+    local currentTerritory = nil
+    for k, v in pairs(territories) do
+        if v.id == terData.currentTerritory.id then
+            currentTerritory = v
+        end
+    end
+
+    if PlayerData.job.name == currentTerritory.owner then
         return ESX.ShowNotification('devTomic | This territory already belongs to you!')
     end
 
-    if terData.taking == true then
+    if currentTerritory.isTaking then
         return ESX.ShowNotification('devTomic | Someone is already taking the territory!')
     end
 
-    if terData.cooldown == true then
+    if currentTerritory.isCooldown then
         return ESX.ShowNotification('devTomic | This territory was recently captured, or capture was attempted!')
     end
 
-    TriggerServerEvent('tomic_territories:captureServer', terData.id, terData.job, terData.label, terData.name, terData.currentOwner)
+    TriggerServerEvent('tomic_territories:captureServer', currentTerritory.id, PlayerData.job.name, PlayerData.job.label, currentTerritory.name, currentTerritory.owner)
 end)
 
 RegisterNetEvent('tomic_territories:openStash')

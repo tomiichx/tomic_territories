@@ -6,7 +6,9 @@ lua54 'yes'
 author 'tomiichx'
 description 'Territory System for Gangs'
 
-version 'v2.0.1'
+version 'v3.0'
+
+ui_page 'web/index.html'
 
 shared_scripts {
   '@es_extended/imports.lua',
@@ -19,4 +21,10 @@ client_script 'client.lua'
 server_scripts {
   '@oxmysql/lib/MySQL.lua',
   'server.lua'
+}
+
+files {
+  'web/index.html',
+  'web/script.js',
+  'web/style.css'
 }
