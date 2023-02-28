@@ -1,5 +1,5 @@
-$(function () {
-	$(window).on("message", function (event) {
+$(() => {
+	$(window).on('message', (event) => {
 		const eventData = event.originalEvent.data;
 		const territoryData = eventData.data[0];
 		
@@ -14,16 +14,16 @@ $(function () {
 		});
 
 		switch (eventData.action) {
-			case "showUI":
-				$("#scoreboard").show();
-				$("#scoreboard-territory").html(territoryData.territoryName);
-				$("#scoreboard-status").html(territoryData.territoryStatus);
-				$("#scoreboard-attackers_count").html(territoryAttackers);
-				$("#scoreboard-defenders_count").html(territoryDefenders);
+			case 'showUI':
+				$('#scoreboard').show();
+				$('#scoreboard-territory').html(territoryData.territoryName);
+				$('#scoreboard-status').html(territoryData.territoryStatus);
+				$('#scoreboard-attackers_count').html(territoryAttackers);
+				$('#scoreboard-defenders_count').html(territoryDefenders);
 				break;
-			case "hideUI":
-				$("#scoreboard").fadeOut(500, () => {
-					$("#scoreboard").hide();
+			case 'hideUI':
+				$('#scoreboard').fadeOut(500, () => {
+					$('#scoreboard').hide();
 				});
 				break;
 		}

@@ -1,23 +1,23 @@
 local territories = {}
 local queries = {
-    SELECT_POINTS = 'SELECT * FROM jobs',
+    SELECT_POINTS = 'SELECT * FROM jobs WHERE name IN (?)',
     SELECT_PREPARE_POINTS = 'SELECT * FROM jobs WHERE name IN (?, ?)',
     SELECT_TERRITORY = 'SELECT * FROM tomic_territories',
     INSERT_TERRITORY = 'INSERT INTO tomic_territories (id, name, owner, radius, label, type, coords) VALUES (?, ?, ?, ?, ?, ?, ?)',
     UPDATE_POINTS = 'UPDATE jobs SET weeklyPoints = ?, monthlyPoints = ?, totalPoints = ? WHERE name = ?',
-    UPDATE_RESET_POINTS = "UPDATE jobs SET weeklyPoints = 0",
+    UPDATE_RESET_POINTS = 'UPDATE jobs SET weeklyPoints = 0',
     UPDATE_TERRITORY = 'UPDATE tomic_territories SET owner = ?, label = ? WHERE id = ?',
     DELETE_TERRITORY = 'DELETE FROM tomic_territories WHERE name = ?'
 }
 
 CreateThread(function()
-    MySQL.query(queries.SELECT_TERRITORY, function(data)
-        if data then
+    MySQL.query(queries.SELECT_TERRITORY, function(rowsReturned)
+        if rowsReturned then
             territories = {}
-            for i = 1, #data, 1 do
-                table.insert(territories, { id = data[i].id, name = data[i].name, owner = data[i].owner, radius = data[i].radius, label = data[i].label, type = data[i].type, coords = json.decode(data[i].coords), isTaking = false, progress = 0, isCooldown = false, attenders = {} })
-                exports.ox_inventory:RegisterStash('devTomic-Ter[' .. data[i].name .. '][' .. data[i].id .. ']', 'devTomic | Territory: ' .. data[i].name, 50, 100000)
-                print('devTomic | Registered stash: devTomic-' .. data[i].id .. ' | Territory: ' .. data[i].name .. '')
+            for i = 1, #rowsReturned, 1 do
+                table.insert(territories, { id = rowsReturned[i].id, name = rowsReturned[i].name, owner = rowsReturned[i].owner, radius = rowsReturned[i].radius, label = rowsReturned[i].label, type = rowsReturned[i].type, coords = json.decode(rowsReturned[i].coords), isTaking = false, progress = 0, isCooldown = false, attenders = {} })
+                exports.ox_inventory:RegisterStash('devTomic-Ter[' .. rowsReturned[i].name .. '][' .. rowsReturned[i].id .. ']', 'devTomic | Territory: ' .. rowsReturned[i].name, 50, 100000)
+                print('devTomic | Registered stash: devTomic-' .. rowsReturned[i].id .. ' | Territory: ' .. rowsReturned[i].name .. '')
             end
         end
     end)
@@ -30,15 +30,14 @@ end)
 
 if shared.rankings then
     ESX.RegisterServerCallback('tomic_territories:fetchPoints', function(source, cb)
-        MySQL.query(queries.SELECT_POINTS, function(cbResults)
-            if cbResults then
-                cb(cbResults)
-            end
+        MySQL.query(queries.SELECT_POINTS, { getJobs() }, function(rowsReturned)
+            if not rowsReturned then return end
+            cb(rowsReturned)
         end)
     end)
 end
 
-RegisterCommand(shared.command, function(source, args, rawCommand)
+RegisterCommand(shared.adminCommand, function(source, args, rawCommand)
     local xPlayer = ESX.GetPlayerFromId(source)
 
     if source == 0 then
@@ -46,11 +45,11 @@ RegisterCommand(shared.command, function(source, args, rawCommand)
     end
 
     if not inArray(shared.groups, xPlayer.getGroup()) then
-        return xPlayer.showNotification('devTomic | You do not have permission to use this command!')
+        return xPlayer.showNotification(translateMessage('no_permission'))
     end
 
     if args[1] == nil then
-        return xPlayer.showNotification('devTomic | Usage: /territory [create/delete]')
+        return xPlayer.showNotification(translateMessage('no_args'))
     end
 
     if args[1] == 'create' then
@@ -68,7 +67,7 @@ AddEventHandler('tomic_territories:createTerritory', function(territoryInfo)
 
     for i = 1, #territories, 1 do
         if territories[i].name == territoryInfo.name then
-            return xPlayer.showNotification('devTomic | Territory with that name already exists!')
+            return xPlayer.showNotification(translateMessage('territory_already_exists'))
         end
     end
 
@@ -87,14 +86,13 @@ AddEventHandler('tomic_territories:createTerritory', function(territoryInfo)
 
     MySQL.query(queries.INSERT_TERRITORY, { territory.id, territory.name, territory.owner, territory.radius, territory.label, territory.type, json.encode(territory.coords) }, function(rowsChanged)
         if rowsChanged.affectedRows == 0 then
-            return xPlayer.showNotification('devTomic | Territory creation failed!')
+            return xPlayer.showNotification(translateMessage('territory_creation_failed'))
         end
 
         table.insert(territories, territory)
-        exports.ox_inventory:RegisterStash('devTomic-Ter[' .. territory.name .. '][' .. territory.id .. ']',
-            'devTomic | Territory: ' .. territory.name, 50, 100000)
+        exports.ox_inventory:RegisterStash('devTomic-Ter[' .. territory.name .. '][' .. territory.id .. ']', 'devTomic | Territory: ' .. territory.name, 50, 100000)
         TriggerClientEvent('tomic_territories:updateTerritories', -1, territories)
-        xPlayer.showNotification('devTomic | Territory created!')
+        xPlayer.showNotification(translateMessage('territory_created'))
     end)
 end)
 
@@ -103,7 +101,7 @@ AddEventHandler('tomic_territories:deleteTerritory', function(territoryName)
     local xPlayer = ESX.GetPlayerFromId(source)
     MySQL.query(queries.DELETE_TERRITORY, { territoryName }, function(rowsChanged)
         if rowsChanged.affectedRows == 0 then
-            return xPlayer.showNotification('devTomic | Territory deletion failed!')
+            return xPlayer.showNotification(translateMessage('territory_deletion_failed'))
         end
 
         for i = 1, #territories, 1 do
@@ -115,7 +113,7 @@ AddEventHandler('tomic_territories:deleteTerritory', function(territoryName)
 
         Wait(500)
         TriggerClientEvent('tomic_territories:updateTerritories', -1, territories)
-        xPlayer.showNotification('devTomic | Territory deleted!')
+        xPlayer.showNotification(translateMessage('territory_deleted'))
     end)
 end)
 
@@ -135,7 +133,7 @@ local function updateAttenders(id, identifier, job, inTerritory, isDead)
         end
     end
 
-    local territoryStatusMessage = isDefender and shared.defenderMessage or shared.attackerMessage
+    local territoryStatusMessage = isDefender and translateMessage('defender_message') or translateMessage('attacker_message')
     if inTerritory and not found and not isDead then
         table.insert(attenders, {
             playerIdentifier = identifier, playerJob = job, isPlayerDefender = isDefender,
@@ -153,18 +151,17 @@ AddEventHandler('tomic_territories:updateAttenders', updateAttenders)
 
 RegisterNetEvent('tomic_territories:captureServer')
 AddEventHandler('tomic_territories:captureServer', function(id, job, label, name, currentOwner)
-    local _source = source
-    local xPlayer = ESX.GetPlayerFromId(_source)
+    local xPlayer = ESX.GetPlayerFromId(source)
     local xPlayers = ESX.GetPlayers()
     for i = 1, #xPlayers, 1 do
         local xPlayer = ESX.GetPlayerFromId(xPlayers[i])
 
         if xPlayer.job.name == currentOwner then
-            xPlayer.showNotification('devTomic | Territory: ' .. name .. ' is being attacked by another gang!')
+            xPlayer.showNotification(string.format(translateMessage('territory_being_attacked'), name))
         end
 
         if xPlayer.job.name == job then
-            xPlayer.showNotification('devTomic | Your gang started attacking territory ' .. name .. '!')
+            xPlayer.showNotification(string.format(translateMessage('territory_started_attacking'), name))
         end
     end
 
@@ -179,44 +176,30 @@ end)
 RegisterNetEvent('tomic_territories:sellDealer')
 AddEventHandler('tomic_territories:sellDealer', function(itemObject)
     local xPlayer = ESX.GetPlayerFromId(source)
+    local itemCurrency = itemObject.itemCurrency and 'black_money' or 'money'
+
     if xPlayer.getInventoryItem(itemObject.itemKey).count < itemObject.itemCount then
-        return xPlayer.showNotification('devTomic | You do not have that amount!')
+        return xPlayer.showNotification(translateMessage('invalid_amount'))
     end
 
-    if itemObject.itemCurrency then
-        xPlayer.addAccountMoney('black_money', itemObject.itemWorth * itemObject.itemCount)
-    else
-        xPlayer.addMoney(itemObject.itemWorth * itemObject.itemCount)
-    end
-
+    xPlayer.addAccountMoney(itemCurrency, itemObject.itemWorth * itemObject.itemCount)
     xPlayer.removeInventoryItem(itemObject.itemKey, itemObject.itemCount)
 end)
 
 RegisterNetEvent('tomic_territories:buyMarket')
 AddEventHandler('tomic_territories:buyMarket', function(itemObject)
     local xPlayer = ESX.GetPlayerFromId(source)
-    if itemObject.itemCurrency then
-        if xPlayer.getAccount('black_money').money < itemObject.itemWorth * itemObject.itemCount then
-            return xPlayer.showNotification('devTomic | You do not have enough black money!')
-        end
+    local itemCurrency = itemObject.itemCurrency and 'black_money' or 'money'
 
-        if not xPlayer.canCarryItem(itemObject.itemKey, itemObject.itemCount) then
-            return xPlayer.showNotification('devTomic | You do not have any space in your inventory!')
-        end
-
-        xPlayer.removeAccountMoney('black_money', itemObject.itemWorth * itemObject.itemCount)
-    else
-        if xPlayer.getMoney() < itemObject.itemWorth * itemObject.itemCount then
-            return xPlayer.showNotification('devTomic | You do not have enough money!')
-        end
-
-        if not xPlayer.canCarryItem(itemObject.itemKey, itemObject.itemCount) then
-            return xPlayer.showNotification('devTomic | You do not have any space in your inventory!')
-        end
-
-        xPlayer.removeMoney(itemObject.itemWorth * itemObject.itemCount)
+    if xPlayer.getAccount(itemCurrency).money < itemObject.itemWorth * itemObject.itemCount then
+        return xPlayer.showNotification(translateMessage('not_enough_money'))
     end
 
+    if not xPlayer.canCarryItem(itemObject.itemKey, itemObject.itemCount) then
+        return xPlayer.showNotification(translateMessage('not_enough_space'))
+    end
+
+    xPlayer.removeAccountMoney(itemCurrency, itemObject.itemWorth * itemObject.itemCount)
     xPlayer.addInventoryItem(itemObject.itemKey, itemObject.itemCount)
 end)
 
@@ -266,7 +249,7 @@ AddEventHandler('tomic_territories:rewardPlayers', function(terOwner, terName)
         local xPlayer = ESX.GetPlayerFromId(xPlayers[i])
         if xPlayer.job.name == terOwner then
             xPlayer.addInventoryItem(shared.rewards.item, shared.rewards.count)
-            xPlayer.showNotification('devTomic | You got $' .. shared.rewards.count .. ' as a reward for capturing: ' .. terName .. '!')
+            xPlayer.showNotification(string.format(translateMessage('territory_reward'), shared.rewards.count, terName))
         end
     end
 end)
@@ -301,6 +284,14 @@ function inArray(array, value)
     end
 
     return false
+end
+
+function getJobs()
+    local jobsArray = {}
+    for k in pairs(shared.gangs) do
+        jobsArray[#jobsArray + 1] = k
+    end
+    return jobsArray
 end
 
 function checkForUpdates()

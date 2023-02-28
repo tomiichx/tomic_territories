@@ -4,9 +4,9 @@ game 'gta5'
 lua54 'yes'
 
 author 'tomiichx'
-description 'Territory System for Gangs'
+description 'Adds territories for illegal organizations to your FiveM ESX Server.'
 
-version 'v3.0'
+version 'v3.1.0'
 
 ui_page 'web/index.html'
 
