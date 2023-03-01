@@ -30,7 +30,7 @@ end)
 
 if shared.rankings then
     ESX.RegisterServerCallback('tomic_territories:fetchPoints', function(source, cb)
-        MySQL.query(queries.SELECT_POINTS, { getJobs() }, function(rowsReturned)
+        MySQL.query(queries.SELECT_POINTS, { getAllowedJobs() }, function(rowsReturned)
             if not rowsReturned then return end
             cb(rowsReturned)
         end)
@@ -150,7 +150,7 @@ RegisterNetEvent('tomic_territories:updateAttenders')
 AddEventHandler('tomic_territories:updateAttenders', updateAttenders)
 
 RegisterNetEvent('tomic_territories:captureServer')
-AddEventHandler('tomic_territories:captureServer', function(id, job, label, name, currentOwner)
+AddEventHandler('tomic_territories:captureServer', function(id, job, name, currentOwner)
     local xPlayer = ESX.GetPlayerFromId(source)
     local xPlayers = ESX.GetPlayers()
     for i = 1, #xPlayers, 1 do
@@ -168,39 +168,37 @@ AddEventHandler('tomic_territories:captureServer', function(id, job, label, name
     local currentTerritory = territories[id]
     currentTerritory.isTaking, currentTerritory.isCooldown = true, true
     TriggerClientEvent('tomic_territories:updateTerritories', -1, territories)
-    TriggerClientEvent('tomic_territories:updateBlips', -1, id, job, label)
+    TriggerClientEvent('tomic_territories:updateBlips', -1, id, job)
     TriggerClientEvent('tomic_territories:captureProgress', source, id, currentTerritory)
     print(GetPlayerName(xPlayer.source) .. ' started capturing: ' .. name)
 end)
 
-RegisterNetEvent('tomic_territories:sellDealer')
-AddEventHandler('tomic_territories:sellDealer', function(itemObject)
+RegisterNetEvent('tomic_territories:marketHandler')
+AddEventHandler('tomic_territories:marketHandler', function(itemObject, handlerType)
     local xPlayer = ESX.GetPlayerFromId(source)
     local itemCurrency = itemObject.itemCurrency and 'black_money' or 'money'
 
-    if xPlayer.getInventoryItem(itemObject.itemKey).count < itemObject.itemCount then
-        return xPlayer.showNotification(translateMessage('invalid_amount'))
+    if handlerType == 'sell' then
+        if xPlayer.getInventoryItem(itemObject.itemKey).count < itemObject.itemCount then
+            return xPlayer.showNotification(translateMessage('invalid_amount'))
+        end
+
+        xPlayer.addAccountMoney(itemCurrency, itemObject.itemWorth * itemObject.itemCount)
+        xPlayer.removeInventoryItem(itemObject.itemKey, itemObject.itemCount)
     end
 
-    xPlayer.addAccountMoney(itemCurrency, itemObject.itemWorth * itemObject.itemCount)
-    xPlayer.removeInventoryItem(itemObject.itemKey, itemObject.itemCount)
-end)
+    if handlerType == 'buy' then
+        if xPlayer.getAccount(itemCurrency).money < itemObject.itemWorth * itemObject.itemCount then
+            return xPlayer.showNotification(translateMessage('not_enough_money'))
+        end
 
-RegisterNetEvent('tomic_territories:buyMarket')
-AddEventHandler('tomic_territories:buyMarket', function(itemObject)
-    local xPlayer = ESX.GetPlayerFromId(source)
-    local itemCurrency = itemObject.itemCurrency and 'black_money' or 'money'
+        if not xPlayer.canCarryItem(itemObject.itemKey, itemObject.itemCount) then
+            return xPlayer.showNotification(translateMessage('not_enough_space'))
+        end
 
-    if xPlayer.getAccount(itemCurrency).money < itemObject.itemWorth * itemObject.itemCount then
-        return xPlayer.showNotification(translateMessage('not_enough_money'))
+        xPlayer.removeAccountMoney(itemCurrency, itemObject.itemWorth * itemObject.itemCount)
+        xPlayer.addInventoryItem(itemObject.itemKey, itemObject.itemCount)
     end
-
-    if not xPlayer.canCarryItem(itemObject.itemKey, itemObject.itemCount) then
-        return xPlayer.showNotification(translateMessage('not_enough_space'))
-    end
-
-    xPlayer.removeAccountMoney(itemCurrency, itemObject.itemWorth * itemObject.itemCount)
-    xPlayer.addInventoryItem(itemObject.itemKey, itemObject.itemCount)
 end)
 
 RegisterNetEvent('tomic_territories:captureComplete')
@@ -286,7 +284,7 @@ function inArray(array, value)
     return false
 end
 
-function getJobs()
+function getAllowedJobs()
     local jobsArray = {}
     for k in pairs(shared.gangs) do
         jobsArray[#jobsArray + 1] = k

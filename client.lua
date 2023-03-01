@@ -63,7 +63,7 @@ function createBlips()
         SetBlipSprite(headerBlip, 310)
         SetBlipDisplay(headerBlip, 4)
         BeginTextCommandSetBlipName('STRING')
-        AddTextComponentString(string.format('Territory: %s | Owner: %s', territory.name, territory.owner ~= 'noone' and territory.label or 'Free Territory!'))
+        AddTextComponentString(string.format(translateMessage('territory_blip_occupied'), territory.name, territory.owner ~= 'noone' and territory.label or translateMessage("territory_blip_unoccupied")))
         EndTextCommandSetBlipName(headerBlip)
         SetBlipScale(headerBlip, 0.75)
         SetBlipColour(headerBlip, 0)
@@ -86,14 +86,12 @@ AddEventHandler('tomic_territories:updateTerritories', function(cb)
 end)
 
 RegisterNetEvent('tomic_territories:updateBlips')
-AddEventHandler('tomic_territories:updateBlips', function(id, job, label)
+AddEventHandler('tomic_territories:updateBlips', function(id, job)
     while true do
         Wait(1000)
         for i, v in pairs(territories) do
             if v.id == id then
-                if not v.isTaking then
-                    break
-                end
+                if not v.isTaking then break end
                 for k, p in pairs(shared.gangs) do
                     if v.owner == k then
                         SetBlipColour(circleBlips[i], p.blipColour)
@@ -185,7 +183,7 @@ CreateThread(function()
     Wait(2000)
     if PlayerData.job and shared.gangs[PlayerData.job.name] then
         while true do
-            Wait(6000)
+            Wait(5000)
             isInTerritory(IsEntityDead(PlayerPedId()))
         end
     end
@@ -293,11 +291,7 @@ AddEventHandler('tomic_territories:letCount', function(data)
         itemCurrency = data.selected.currency
     }
 
-    if data.selected.type == 'buy' then
-        TriggerServerEvent('tomic_territories:buyMarket', itemObject)
-    elseif data.selected.type == 'sell' then
-        TriggerServerEvent('tomic_territories:sellDealer', itemObject)
-    end
+    TriggerServerEvent('tomic_territories:marketHandler', itemObject, data.selected.type)
 end)
 
 RegisterNetEvent('tomic_territories:sellList')
@@ -392,7 +386,7 @@ AddEventHandler('tomic_territories:captureClient', function(terData)
         return ESX.ShowNotification(translateMessage('territory_on_cooldown'))
     end
 
-    TriggerServerEvent('tomic_territories:captureServer', currentTerritory.id, PlayerData.job.name, PlayerData.job.label, currentTerritory.name, currentTerritory.owner)
+    TriggerServerEvent('tomic_territories:captureServer', currentTerritory.id, PlayerData.job.name, currentTerritory.name, currentTerritory.owner)
 end)
 
 RegisterNetEvent('tomic_territories:openStash')

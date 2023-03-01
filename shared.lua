@@ -72,6 +72,9 @@ shared = {
             ['territory_cause_distance'] = 'You left the territory, capturing progress has stopped!',
             ['territory_show_text'] = '[E] - Info | %s',
             ['territory_capture_progress_bar'] = 'Capturing...',
+            -- Blips
+            ['territory_blip_occupied'] = 'Territory: %s | Owner: %s',
+            ['territory_blip_unoccupied'] = 'Unoccupied',
             -- Client Context Menu
             ['territory_menu_context_title'] = 'devTomic | Territory List',
             ['territory_menu_title'] = 'Territories | 🎲',
@@ -142,6 +145,9 @@ shared = {
             ['territory_cause_distance'] = 'Napustili ste teritoriju, zauzimanje je prekinuto!',
             ['territory_show_text'] = '[E] - Info | %s',
             ['territory_capture_progress_bar'] = 'Zauzimanje...',
+            -- Blips
+            ['territory_blip_occupied'] = 'Teritorija: %s | Vlasnik: %s',
+            ['territory_blip_unoccupied'] = 'Nitko',
             -- Client Context Menu
             ['territory_menu_context_title'] = 'devTomic | Popis teritorija',
             ['territory_menu_title'] = 'Teritorije | 🎲',
