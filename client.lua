@@ -1,14 +1,14 @@
-local ESX, PlayerData, territories, headerBlips, circleBlips, progress, lastTerritory = nil, {}, {}, {}, {}, 0, nil
+local ESX, PlayerData, territoryCollection, headerBlips, circleBlips, progress, lastTerritory, showUI = nil, {}, {}, {}, {}, 0, nil, false
 
 CreateThread(function()
     ESX = exports['es_extended']:getSharedObject()
     PlayerData = ESX.GetPlayerData()
 
-    ESX.TriggerServerCallback('tomic_territories:getTerritories', function(cb)
-        territories = cb
+    ESX.TriggerServerCallback('tomic_territories:getTerritories', function(serverData)
+        territoryCollection = serverData
     end)
 
-    Wait(1000) -- Wait for the territories to load (in case you have a lot of them, this would be clever to keep here)...
+    Wait(1000) -- Wait for the territories to load (in case you have a lot of them, it'd be clever to keep this here...)
 
     createBlips()
 end)
@@ -44,26 +44,26 @@ local function checkInput(input, typeRequired, checkEmpty)
 end
 
 function createBlips()
-    for i = 1, #territories do
-        local territory = territories[i]
-        local circleBlip = AddBlipForCoord(territory.coords.x, territory.coords.y, territory.coords.z)
+    for i = 1, #territoryCollection do
+        local currentTerritory = territoryCollection[i]
+        local circleBlip = AddBlipForCoord(currentTerritory.coords.x, currentTerritory.coords.y, currentTerritory.coords.z)
         SetBlipSprite(circleBlip, 373)
         SetBlipDisplay(circleBlip, 8)
         SetBlipScale(circleBlip, 4.0)
         SetBlipAlpha(circleBlip, 100)
         SetBlipAsShortRange(circleBlip, true)
         for k, v in pairs(shared.gangs) do
-            if territory.owner == k then
+            if currentTerritory.owner == k then
                 SetBlipColour(circleBlip, v.blipColour)
                 break
             end
         end
 
-        local headerBlip = AddBlipForCoord(territory.coords.x, territory.coords.y, territory.coords.z + 15)
+        local headerBlip = AddBlipForCoord(currentTerritory.coords.x, currentTerritory.coords.y, currentTerritory.coords.z + 15)
         SetBlipSprite(headerBlip, 310)
         SetBlipDisplay(headerBlip, 4)
         BeginTextCommandSetBlipName('STRING')
-        AddTextComponentString(string.format(translateMessage('territory_blip_occupied'), territory.name, territory.owner ~= 'noone' and territory.label or translateMessage("territory_blip_unoccupied")))
+        AddTextComponentString(string.format(translateMessage('territory_blip_occupied'), currentTerritory.name, currentTerritory.owner ~= 'noone' and currentTerritory.label or translateMessage("territory_blip_unoccupied")))
         EndTextCommandSetBlipName(headerBlip)
         SetBlipScale(headerBlip, 0.75)
         SetBlipColour(headerBlip, 0)
@@ -76,8 +76,8 @@ function createBlips()
 end
 
 RegisterNetEvent('tomic_territories:updateTerritories')
-AddEventHandler('tomic_territories:updateTerritories', function(cb)
-    territories = cb
+AddEventHandler('tomic_territories:updateTerritories', function(serverData)
+    territoryCollection = serverData
     for _, blip in pairs(circleBlips) do RemoveBlip(blip) end
     for _, blip in pairs(headerBlips) do RemoveBlip(blip) end
     circleBlips, headerBlips = {}, {}
@@ -89,16 +89,12 @@ RegisterNetEvent('tomic_territories:updateBlips')
 AddEventHandler('tomic_territories:updateBlips', function(id, job)
     while true do
         Wait(1000)
-        for i, v in pairs(territories) do
-            if v.id == id then
-                if not v.isTaking then break end
-                for k, p in pairs(shared.gangs) do
-                    if v.owner == k then
-                        SetBlipColour(circleBlips[i], p.blipColour)
-                        Wait(1000)
-                        SetBlipColour(circleBlips[i], shared.gangs[job].blipColour)
-                    end
-                end
+        if not territoryCollection[id].isTaking then break end
+        for k, p in pairs(shared.gangs) do
+            if territoryCollection[id].owner == k then
+                SetBlipColour(circleBlips[id], p.blipColour)
+                Wait(1000)
+                SetBlipColour(circleBlips[id], shared.gangs[job].blipColour)
             end
         end
     end
@@ -125,7 +121,7 @@ AddEventHandler('tomic_territories:createTerritory', function()
     end
 
     TriggerServerEvent('tomic_territories:createTerritory', {
-        id = #territories + 1,
+        id = #territoryCollection + 1,
         name = input[1],
         type = input[3],
         owner = 'noone',
@@ -162,11 +158,11 @@ end)
 
 local function isInTerritory(isDead)
     local playerPed = PlayerPedId()
-    local playerCoords, checkDead = GetEntityCoords(playerPed), isDead and true or false
-    for k, v in pairs(territories) do
-        local coords = vec3(v.coords.x, v.coords.y, v.coords.z)
-        local distance = #(playerCoords - coords)
-        if distance < tonumber(v.radius) and v.isTaking then
+    local playerCoords, checkDead = GetEntityCoords(playerPed), isDead
+    for k, v in pairs(territoryCollection) do
+        local territoryCoords = vec3(v.coords.x, v.coords.y, v.coords.z)
+        local playerTerritoryDistance = #(playerCoords - territoryCoords)
+        if playerTerritoryDistance < tonumber(v.radius) and v.isTaking then
             lastTerritory = v.id
             TriggerServerEvent('tomic_territories:updateAttenders', lastTerritory, PlayerData.identifier, PlayerData.job.name, true, checkDead)
             return true, k
@@ -184,25 +180,24 @@ CreateThread(function()
     if PlayerData.job and shared.gangs[PlayerData.job.name] then
         while true do
             Wait(5000)
-            isInTerritory(IsEntityDead(PlayerPedId()))
+            isInTerritory(ESX.GetPlayerData().dead)
         end
     end
 end)
 
 CreateThread(function()
     Wait(1000) -- Wait for everything to load before displaying the markers...
-    local showUI = false
     while true do
         local playerCoords, sleepThread = GetEntityCoords(PlayerPedId()), 2000
-        for k, v in pairs(territories) do
-            local coords = vec3(v.coords.x, v.coords.y, v.coords.z)
-            local distance = #(playerCoords - coords)
+        for k, v in pairs(territoryCollection) do
+            local territoryCoords = vec3(v.coords.x, v.coords.y, v.coords.z)
+            local playerTerritoryDistance = #(playerCoords - territoryCoords)
             if PlayerData.job and shared.gangs[PlayerData.job.name] then
-                if distance < tonumber(v.radius) then
+                if playerTerritoryDistance < tonumber(v.radius) then
                     sleepThread = 0
-                    DrawMarker(2, coords.x, coords.y, coords.z, 0.0, 0.0, 0.0, 0.0, 0, 0.0, 0.15, 0.15, 0.15, 200, 0, 50, 230, false, false, 0, true, nil, nil, false)
-                    DrawMarker(1, coords.x, coords.y, coords.z, 0.0, 0.0, 0.0, 0.0, 0, 0.0, 0.25, 0.25, 0.02, 255, 255, 255, 255, false, false, 0, true, nil, nil, false)
-                    if distance < 1.5 then
+                    DrawMarker(2, territoryCoords.x, territoryCoords.y, territoryCoords.z, 0.0, 0.0, 0.0, 0.0, 0, 0.0, 0.15, 0.15, 0.15, 200, 0, 50, 230, false, false, 0, true, nil, nil, false)
+                    DrawMarker(1, territoryCoords.x, territoryCoords.y, territoryCoords.z, 0.0, 0.0, 0.0, 0.0, 0, 0.0, 0.25, 0.25, 0.02, 255, 255, 255, 255, false, false, 0, true, nil, nil, false)
+                    if playerTerritoryDistance < 1.5 then
                         if IsControlJustPressed(0, 38) then
                             TriggerEvent('tomic_territories:infoMenu', { id = v.id, job = PlayerData.job.name, label = PlayerData.job.label, name = v.name, currentOwner = v.owner, terCoords = vec3(v.coords.x, v.coords.y, v.coords.z), isTaking = v.isTaking, isCooldown = v.isCooldown, type = v.type })
                         end
@@ -210,7 +205,7 @@ CreateThread(function()
                             showUI = true
                             lib.showTextUI(string.format(translateMessage('territory_show_text'), v.name))
                         end
-                    elseif distance > 2.0 and showUI then
+                    elseif playerTerritoryDistance > 2.0 and showUI then
                         showUI = false
                         lib.hideTextUI()
                     end
@@ -368,7 +363,7 @@ end)
 RegisterNetEvent('tomic_territories:captureClient')
 AddEventHandler('tomic_territories:captureClient', function(terData)
     local currentTerritory = nil
-    for k, v in pairs(territories) do
+    for k, v in pairs(territoryCollection) do
         if v.id == terData.currentTerritory.id then
             currentTerritory = v
         end
@@ -392,13 +387,13 @@ end)
 RegisterNetEvent('tomic_territories:openStash')
 AddEventHandler('tomic_territories:openStash', function(terData)
     terData = terData.currentTerritory
-    local distance = #(terData.terCoords - GetEntityCoords(PlayerPedId()))
+    local playerTerritoryDistance = #(terData.terCoords - GetEntityCoords(PlayerPedId()))
 
     if PlayerData.job and PlayerData.job.name ~= terData.currentOwner then
         return ESX.ShowNotification(translateMessage('territory_not_owned'))
     end
 
-    if distance > 3.0 then
+    if playerTerritoryDistance > 3.0 then
         return ESX.ShowNotification(translateMessage('too_far_away'))
     end
 
@@ -406,42 +401,10 @@ AddEventHandler('tomic_territories:openStash', function(terData)
 end)
 
 RegisterNetEvent('tomic_territories:progressBars')
-AddEventHandler('tomic_territories:progressBars', function(type)
-    if type == 'start' then
-        exports.rprogress:Custom({
-            Async = false,
-            canCancel = false,
-            cancelKey = 178,
-            x = 0.5,
-            y = 0.9,
-            From = 0,
-            To = 100,
-            Duration = shared.capturing * 60000 + 500,
-            Radius = 40,
-            Stroke = 3,
-            Cap = 'round',
-            Padding = 0,
-            MaxAngle = 360,
-            Rotation = 0,
-            Width = 300,
-            Height = 40,
-            ShowTimer = false,
-            ShowProgress = true,
-            Easing = 'easeLinear',
-            Label = translateMessage('territory_capture_progress_bar'),
-            LabelPosition = 'right',
-            Color = 'rgba(255, 0, 0, 1.0)',
-            BGColor = 'rgba(0, 0, 0, 0.4)',
-            DisableControls = {
-                Mouse = false,
-                Player = false,
-                Vehicle = false
-            },
-            onComplete = function(cancelled)
-                exports.rprogress:Stop()
-            end
-        })
-    elseif type == 'stop' then
+AddEventHandler('tomic_territories:progressBars', function(progressType)
+    if progressType == 'start' then
+        exports.rprogress:Custom({ x = 0.5, y = 0.9, From = 0, To = 100, Duration = shared.capturing * 60000 + 500, ShowProgress = true, Radius = 40, Stroke = 3, Width = 300, Height = 40, Label = translateMessage('territory_capture_progress_bar'), LabelPosition = 'right', Color = 'rgba(255, 0, 0, 1.0)', BGColor = 'rgba(0, 0, 0, 0.4)', onComplete = function() exports.rprogress:Stop() end })
+    else
         exports.rprogress:Stop()
     end
 end)
@@ -453,43 +416,43 @@ AddEventHandler('tomic_territories:captureProgress', function(terKey, terData)
         Wait(0)
         local playerPed = PlayerPedId()
         local playerCoords = GetEntityCoords(playerPed)
-        local coords = vec3(terData.coords.x, terData.coords.y, terData.coords.z)
-        local distance = #(playerCoords - coords)
-        local isDead = IsPedDeadOrDying(playerPed, true)
+        local territoryCoords = vec3(terData.coords.x, terData.coords.y, terData.coords.z)
+        local playerTerritoryDistance = #(playerCoords - territoryCoords)
+        local isDead = ESX.GetPlayerData().dead
 
-        if distance < terData.radius then
-            if not isDead then
-                if terData.isTaking then
-                    if progress < 60 then
-                        TriggerEvent('tomic_territories:progressBars', 'start')
-                        Wait(shared.capturing * 60000 / 60)
-                        progress = progress + 1
-                    else
-                        TriggerEvent('tomic_territories:progressBars', 'stop')
-                        TriggerServerEvent('tomic_territories:captureComplete', terData.id, PlayerData.job.name, PlayerData.job.label, terData.owner)
-                        progress = 0
-                        ESX.ShowNotification(string.format(translateMessage('territory_captured'), terData.name))
-                        break
-                    end
-                else
-                    break
-                end
-            else
-                TriggerEvent('tomic_territories:progressBars', 'stop')
-                ESX.ShowNotification(translateMessage('territory_cause_death'))
-                progress = 0
-                TriggerServerEvent('tomic_territories:endCapturing', lastTerritory)
-                lastTerritory = nil
-                break
-            end
-        else
+        if not terData.isTaking then
+            return
+        end
+
+        if playerTerritoryDistance > terData.radius then
             TriggerEvent('tomic_territories:progressBars', 'stop')
             ESX.ShowNotification(translateMessage('territory_cause_distance'))
             progress = 0
             TriggerServerEvent('tomic_territories:endCapturing', lastTerritory)
             lastTerritory = nil
-            break
+            return
         end
+
+        if isDead then
+            TriggerEvent('tomic_territories:progressBars', 'stop')
+            ESX.ShowNotification(translateMessage('territory_cause_death'))
+            progress = 0
+            TriggerServerEvent('tomic_territories:endCapturing', lastTerritory)
+            lastTerritory = nil
+            return
+        end
+
+        if progress >= 60 then
+            TriggerEvent('tomic_territories:progressBars', 'stop')
+            TriggerServerEvent('tomic_territories:captureComplete', terData.id, PlayerData.job.name, PlayerData.job.label, terData.owner)
+            progress = 0
+            ESX.ShowNotification(string.format(translateMessage('territory_captured'), terData.name))
+            return
+        end
+
+        TriggerEvent('tomic_territories:progressBars', 'start')
+        Wait(shared.capturing * 60000 / 60)
+        progress += 1
     end
 end)
 
@@ -530,71 +493,70 @@ end, false)
 
 RegisterNetEvent('tomic_territories:listTerritories')
 AddEventHandler('tomic_territories:listTerritories', function()
-    local terCollection = {}
+    local terListCollection = {}
     local territoryStatuses = {
         ['isCooldown'] = nil,
         ['isTaking'] = nil
     }
 
-    if territories ~= nil then
-        for i = 1, #territories, 1 do
-            local info = territories[i]
-            territoryStatuses.isTaking = info.isTaking and translateMessage('context_yes') or translateMessage('context_no')
-            territoryStatuses.isCooldown = info.isCooldown and translateMessage('context_yes') or translateMessage('context_no')
-            terCollection[i] = {
-                title = string.format(translateMessage('territory_list_territory_name'), info.name),
-                description = string.format(translateMessage('territory_list_territory_owner'), info.label),
-                metadata = {
-                    string.format(translateMessage('territory_list_territory_capturing'), territoryStatuses.isTaking),
-                    string.format(translateMessage('territory_list_territory_cooldown'), territoryStatuses.isCooldown)
-                },
-            }
-        end
+    if territoryCollection == nil then return end
 
-        lib.registerContext({
-            id = 'listTerritories',
-            title = translateMessage('territory_menu_context_title'),
-            menu = 'homePage',
-            options = terCollection,
-        })
-        lib.showContext('listTerritories')
+    for i = 1, #territoryCollection, 1 do
+        local currentTerritory = territoryCollection[i]
+        territoryStatuses.isTaking = currentTerritory.isTaking and translateMessage('context_yes') or translateMessage('context_no')
+        territoryStatuses.isCooldown = currentTerritory.isCooldown and translateMessage('context_yes') or translateMessage('context_no')
+        terListCollection[i] = {
+            title = string.format(translateMessage('territory_list_territory_name'), currentTerritory.name),
+            description = string.format(translateMessage('territory_list_territory_owner'), currentTerritory.label),
+            metadata = {
+                string.format(translateMessage('territory_list_territory_capturing'), territoryStatuses.isTaking),
+                string.format(translateMessage('territory_list_territory_cooldown'), territoryStatuses.isCooldown)
+            },
+        }
     end
+
+    lib.registerContext({
+        id = 'listTerritories',
+        title = translateMessage('territory_menu_context_title'),
+        menu = 'homePage',
+        options = terListCollection,
+    })
+    lib.showContext('listTerritories')
 end)
 
 if shared.rankings then
     RegisterNetEvent('tomic_territories:listRankings')
     AddEventHandler('tomic_territories:listRankings', function()
+        if territoryCollection == nil then return end
         ESX.TriggerServerCallback('tomic_territories:fetchPoints', function(pointsCollection)
             local rankCollection = {}
-            if territories ~= nil then
-                for i = 1, #pointsCollection, 1 do
-                    table.sort(pointsCollection, function(a, b) return a.totalPoints > b.totalPoints end)
-                    rankCollection[i] = {
-                        title = string.format(translateMessage('territory_rankings_gang'), pointsCollection[i].label),
-                        description = string.format(translateMessage('territory_rankings_position'), i),
-                        metadata = {
-                            string.format(translateMessage('territory_rankings_all_time'), pointsCollection[i].totalPoints),
-                            string.format(translateMessage('territory_rankings_monthly'), pointsCollection[i].monthlyPoints),
-                            string.format(translateMessage('territory_rankings_weekly'), pointsCollection[i].weeklyPoints)
-                        }
+            for i = 1, #pointsCollection, 1 do
+                table.sort(pointsCollection, function(a, b) return a.totalPoints > b.totalPoints end)
+                rankCollection[i] = {
+                    title = string.format(translateMessage('territory_rankings_gang'), pointsCollection[i].label),
+                    description = string.format(translateMessage('territory_rankings_position'), i),
+                    metadata = {
+                        string.format(translateMessage('territory_rankings_all_time'), pointsCollection[i].totalPoints),
+                        string.format(translateMessage('territory_rankings_monthly'), pointsCollection[i].monthlyPoints),
+                        string.format(translateMessage('territory_rankings_weekly'), pointsCollection[i].weeklyPoints)
                     }
-                end
-
-                lib.registerContext({
-                    id = 'listRankings',
-                    menu = 'homePage',
-                    title = translateMessage('territory_rankings_menu_context_title'),
-                    options = rankCollection,
-                })
-                lib.showContext('listRankings')
+                }
             end
+
+            lib.registerContext({
+                id = 'listRankings',
+                menu = 'homePage',
+                title = translateMessage('territory_rankings_menu_context_title'),
+                options = rankCollection,
+            })
+            lib.showContext('listRankings')
         end)
     end)
 end
 
 AddEventHandler('onResourceStop', function(resourceName)
-    if resourceName == GetCurrentResourceName() then
-        TriggerEvent('tomic_territories:progressBars', 'stop')
-        progress = 0
-    end
+    if resourceName ~= GetCurrentResourceName() then return end
+
+    TriggerEvent('tomic_territories:progressBars', 'stop')
+    progress = 0
 end)
