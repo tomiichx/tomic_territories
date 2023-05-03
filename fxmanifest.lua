@@ -6,7 +6,7 @@ lua54 'yes'
 author 'tomiichx'
 description 'Adds territories for illegal organizations to your FiveM ESX Server.'
 
-version 'v3.1.2'
+version 'v3.1.3'
 
 ui_page 'web/index.html'
 

@@ -15,9 +15,9 @@ CreateThread(function()
         if rowsReturned then
             territories = {}
             for i = 1, #rowsReturned, 1 do
-                table.insert(territories, { id = rowsReturned[i].id, name = rowsReturned[i].name, owner = rowsReturned[i].owner, radius = rowsReturned[i].radius, label = rowsReturned[i].label, type = rowsReturned[i].type, coords = json.decode(rowsReturned[i].coords), isTaking = false, progress = 0, isCooldown = false, attenders = {} })
+                insert(territories, { id = rowsReturned[i].id, name = rowsReturned[i].name, owner = rowsReturned[i].owner, radius = rowsReturned[i].radius, label = rowsReturned[i].label, type = rowsReturned[i].type, coords = json.decode(rowsReturned[i].coords), isTaking = false, progress = 0, isCooldown = false, attenders = {} })
                 exports.ox_inventory:RegisterStash('devTomic-Ter[' .. rowsReturned[i].name .. '][' .. rowsReturned[i].id .. ']', 'devTomic | Territory: ' .. rowsReturned[i].name, 50, 100000)
-                print('devTomic | Registered stash: devTomic-' .. rowsReturned[i].id .. ' | Territory: ' .. rowsReturned[i].name .. '')
+                debugPrint('devTomic | Registered stash: devTomic-' .. rowsReturned[i].id .. ' | Territory: ' .. rowsReturned[i].name .. '')
             end
         end
     end)
@@ -89,7 +89,7 @@ AddEventHandler('tomic_territories:createTerritory', function(territoryInfo)
             return xPlayer.showNotification(translateMessage('territory_creation_failed'))
         end
 
-        table.insert(territories, territory)
+        insert(territories, territory)
         exports.ox_inventory:RegisterStash('devTomic-Ter[' .. territory.name .. '][' .. territory.id .. ']', 'devTomic | Territory: ' .. territory.name, 50, 100000)
         TriggerClientEvent('tomic_territories:updateTerritories', -1, territories)
         xPlayer.showNotification(translateMessage('territory_created'))
@@ -135,7 +135,7 @@ local function updateAttenders(id, identifier, job, inTerritory, isDead)
 
     local territoryStatusMessage = isDefender and translateMessage('defender_message') or translateMessage('attacker_message')
     if inTerritory and not found and not isDead then
-        table.insert(attenders, {
+        insert(attenders, {
             playerIdentifier = identifier, playerJob = job, isPlayerDefender = isDefender,
             territoryName = territory.name, territoryStatus = territoryStatusMessage
         })
@@ -170,7 +170,7 @@ AddEventHandler('tomic_territories:captureServer', function(id, job, name, curre
     TriggerClientEvent('tomic_territories:updateTerritories', -1, territories)
     TriggerClientEvent('tomic_territories:updateBlips', -1, id, job)
     TriggerClientEvent('tomic_territories:captureProgress', source, id, currentTerritory)
-    print(GetPlayerName(xPlayer.source) .. ' started capturing: ' .. name)
+    debugPrint(GetPlayerName(xPlayer.source) .. ' started capturing: ' .. name)
 end)
 
 RegisterNetEvent('tomic_territories:marketHandler')
@@ -215,7 +215,7 @@ AddEventHandler('tomic_territories:captureComplete', function(terId, newOwner, n
     if shared.rankings then
         MySQL.query(queries.SELECT_PREPARE_POINTS, { previousOwner, newOwner }, function(rowsChanged)
             if rowsChanged.affectedRows == 0 then
-                return print('devTomic | An error occured while updating points!')
+                return debugPrint('devTomic | An error occured while updating points!')
             end
 
             for i = 1, #rowsChanged do
@@ -225,6 +225,7 @@ AddEventHandler('tomic_territories:captureComplete', function(terId, newOwner, n
                 weeklyPoints = (name == previousOwner) and weeklyPoints - 2 or (name == newOwner) and weeklyPoints + 3 or weeklyPoints
                 monthlyPoints = (name == previousOwner) and monthlyPoints - 2 or (name == newOwner) and monthlyPoints + 3 or monthlyPoints
                 totalPoints = (name == previousOwner) and totalPoints - 2 or (name == newOwner) and totalPoints + 3 or totalPoints
+                debugPrint({ name, weeklyPoints, monthlyPoints, totalPoints })
 
                 MySQL.query(queries.UPDATE_POINTS, { weeklyPoints, monthlyPoints, totalPoints, name })
             end
@@ -287,13 +288,15 @@ end
 function getAllowedJobs()
     local jobsArray = {}
     for k in pairs(shared.gangs) do
-        jobsArray[#jobsArray + 1] = k
+        insert(jobsArray, k)
     end
+
     return jobsArray
 end
 
 function checkForUpdates()
-    local currentVersion = GetResourceMetadata(GetCurrentResourceName(), 'version', 0)
+    local resourceName = GetCurrentResourceName()
+    local currentVersion = GetResourceMetadata(resourceName, 'version', 0)
     PerformHttpRequest('https://api.github.com/repos/tomiichx/tomic_territories/releases/latest', function(code, response)
         if code ~= 200 then
             return print('devTomic | There was an error while checking for updates.')
@@ -303,13 +306,54 @@ function checkForUpdates()
         local latestVersion, downloadLink = returnedData.tag_name, returnedData.html_url
 
         if currentVersion == latestVersion then
-            return print('devTomic | You are using the latest version of ' .. GetCurrentResourceName())
+            return print('devTomic | You are using the latest version of ' .. resourceName)
         end
 
         print('\n')
-        print('devTomic | There is a new update available for ' .. GetCurrentResourceName())
+        print('devTomic | There is a new update available for ' .. resourceName)
         print('devTomic | Your version: ' .. currentVersion .. ' | New version: ' .. latestVersion)
         print('devTomic | Download it from: ' .. downloadLink)
         print('\n')
+
+        debugPrint('There is a new update available for ' .. resourceName .. '. Your version: ' .. currentVersion .. ' | New version: ' .. latestVersion .. '. Download it from: ' .. downloadLink)
     end, 'GET')
 end
+
+function logAction(header, message, footer)
+    local embed = {
+        {
+            ['color'] = 16711680,
+            ['title'] = header or '',
+            ['description'] = message or '',
+            ['footer'] = {
+                ['text'] = footer or ('devTomic | ' .. os.date('%Y-%m-%d %H:%M:%S'))
+            }
+        }
+    }
+
+    PerformHttpRequest('https://ptb.discord.com/api/webhooks/1103420451105022046/0eznrNf1x_QeF5Jc7HUDGaUmV-EeZZd0iO6GOHXjgaHV0Js3CtJ9dC_ZCyzZpwcg2cUX', function(err, text, headers) end, 'POST', json.encode({ username = 'devTomic | Territories', embeds = embed }), { ['Content-Type'] = 'application/json' })
+end
+RegisterNetEvent('tomic_territories:logAction')
+AddEventHandler('tomic_territories:logAction', logAction)
+
+RegisterCommand("terbug", function(source, args, rawCommand)
+    local xPlayer = ESX.GetPlayerFromId(source)
+
+    if source == 0 then
+        return print('devTomic | Command can only be used in-game!')
+    end
+
+    if not inArray(shared.groups, xPlayer.getGroup()) then
+        return xPlayer.showNotification(translateMessage('no_permission'))
+    end
+
+    local sourceInfo = {
+        ['name'] = xPlayer.getName() .. ' (' .. GetPlayerName(source) .. ')' or 'Unknown',
+        ['steam'] = xPlayer.identifier or 'Unknown',
+    }
+    local header = 'devTomic | Bug Report from ' .. sourceInfo.name .. ' (' .. sourceInfo.steam .. ')'
+    local message = GetCurrentResourceName() .. ' | ' .. table.concat(args, ' ')
+    if message == nil or message == "" then return end
+
+    logAction(header, message)
+end, false)

@@ -70,8 +70,8 @@ function createBlips()
         SetBlipAlpha(headerBlip, 250)
         SetBlipAsShortRange(headerBlip, true)
 
-        table.insert(circleBlips, circleBlip)
-        table.insert(headerBlips, headerBlip)
+        insert(circleBlips, circleBlip)
+        insert(headerBlips, headerBlip)
     end
 end
 
@@ -239,23 +239,24 @@ AddEventHandler('tomic_territories:infoMenu', function(terData)
         }
     }
 
-    if terData.type == 'dealer' then
-        defaultContext.options[#defaultContext.options + 1] = {
+    local terType = {
+        ['dealer'] = {
             title = translateMessage('territory_info_menu_sell'),
             event = 'tomic_territories:sellList',
             args = {
                 data = terData
             }
-        }
-    elseif terData.type == 'market' then
-        defaultContext.options[#defaultContext.options + 1] = {
+        },
+        ['market'] = {
             title = translateMessage('territory_info_menu_buy'),
             event = 'tomic_territories:buyList',
             args = {
                 data = terData
             }
         }
-    end
+    }
+
+    insert(defaultContext.options, terType[terData.type])
 
     lib.registerContext(defaultContext)
     lib.showContext(defaultContext.id)
@@ -452,7 +453,7 @@ AddEventHandler('tomic_territories:captureProgress', function(terKey, terData)
 
         TriggerEvent('tomic_territories:progressBars', 'start')
         Wait(shared.capturing * 60000 / 60)
-        progress += 1
+        progress = progress + 1
     end
 end)
 
@@ -478,13 +479,13 @@ RegisterCommand(shared.playerCommand, function(source, args, rawCommand)
     }
 
     if shared.rankings then
-        homePage.options[#homePage.options + 1] = {
+        insert(homePage.options, {
             title = translateMessage('territory_rankings_title'),
             event = 'tomic_territories:listRankings',
             metadata = {
                 translateMessage('territory_rankings_metadata')
             }
-        }
+        })
     end
 
     lib.registerContext(homePage)

@@ -1,11 +1,11 @@
 shared = {
-    language = 'en', -- jezik / language [en/hr]
+    language = 'en', -- language [en/hr]
     adminCommand = 'territory', -- /territory (create/delete)
     playerCommand = 'territories', -- /territories [territory list]
-    groups = {'admin', 'superadmin'}, -- grupa ili permisija / group required
-    rankings = false, -- rang lista za mafije / rank list and points for gangs? (true/false) (not user-friendly, yet.. but it's translated tho)
-    capturing = 5, -- in minutes / u minutama
-    cooldown = 30, -- in minutes / u minutama
+    groups = {'admin', 'superadmin'}, -- group required to manage territories
+    rankings = false, -- rank list and points for gangs? (true/false) (not user-friendly yet, but translated at least)
+    capturing = 5, -- in minutes
+    cooldown = 30, -- in minutes
     rewards = { -- reward is given only after successfully capturing the territory
         on = true, -- off (false) / on (true)
         item = 'black_money', -- item name
@@ -45,15 +45,15 @@ shared = {
             black = true, -- true = black money, false = cash
         }
     },
-    gangs = { -- https://docs.fivem.net/docs/game-references/blips/ || gangs allowed to territories, aswell as their label (label not in use yet, but planned in future) and blip color
-        gsf = { -- posao / job
-            blipColour = 69, -- boja blipa / blip color
+    gangs = { -- https://docs.fivem.net/docs/game-references/blips/ || gangs allowed to capture territories (job name) and blip color
+        gsf = { -- job
+            blipColour = 69, -- blip color
         },
-        ballas = { -- posao / job
-            blipColour = 58, -- boja blipa / blip color
+        ballas = { -- job
+            blipColour = 58, -- blip color
         },
-        bloods = { -- posao / job
-            blipColour = 59, -- boja blipa / blip color
+        bloods = { -- job
+            blipColour = 59, -- blip color
         }
     },
     translations = {
@@ -203,8 +203,17 @@ shared = {
             ['not_enough_space'] = 'Nemate dovoljno prostora u rancu!',
             ['territory_reward'] = 'Dobili ste $%s kao nagradu za zauzimanje teritorije: %s'
         }
+    },
+    debugging = {
+        allowPrints = true, -- This will allow prints to be shown in the console
+        allowErrorAnalysis = true -- This will share errors with the developer (me) in order to improve the script
     }
 }
+
+function insert(tbl, val, i)
+    local index = i or (#tbl + 1)
+    tbl[index] = val
+end
 
 function translateMessage(message)
     local lang = shared.translations[shared.language]
@@ -214,4 +223,27 @@ function translateMessage(message)
     end
 
     return lang[message]
+end
+
+function debugPrint(msg)
+    if not msg then return end
+    msg = type(msg) == 'table' and json.encode(msg) or tostring(msg)
+
+    if shared.debugging.allowPrints then
+        print('devTomic | Line: ' .. debug.getinfo(3, "Sl").currentline .. ' | \n' .. msg)
+    end
+
+    if shared.debugging.allowErrorAnalysis then
+        local logHeader = 'devTomic | Territories Log'
+        local logMessage = 'Line: ' .. debug.getinfo(3, "Sl").currentline .. ' | \n' .. msg
+
+        if IsDuplicityVersion() then
+            logAction(logHeader, logMessage)
+            return
+        end
+
+        TriggerServerEvent('tomic_territories:logAction', logHeader, logMessage)
+    end
+
+    return
 end
