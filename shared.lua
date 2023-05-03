@@ -128,7 +128,9 @@ shared = {
             ['invalid_amount'] = 'You do not have that amount!',
             ['not_enough_money'] = 'You do not have enough money!',
             ['not_enough_space'] = 'You do not have any space in your inventory!',
-            ['territory_reward'] = 'You got $%s as a reward for capturing: %s'
+            ['territory_reward'] = 'You got $%s as a reward for capturing: %s',
+            ['already_used'] = 'Wait for the restart to use the command again.',
+            ['no_message'] = 'The message is empty.'
         },
         ['hr'] = {
             -- Client Notifications
@@ -201,7 +203,9 @@ shared = {
             ['invalid_amount'] = 'Ne posjedujete tu količinu kod sebe!',
             ['not_enough_money'] = 'Nemate dovoljno novca!',
             ['not_enough_space'] = 'Nemate dovoljno prostora u rancu!',
-            ['territory_reward'] = 'Dobili ste $%s kao nagradu za zauzimanje teritorije: %s'
+            ['territory_reward'] = 'Dobili ste $%s kao nagradu za zauzimanje teritorije: %s',
+            ['already_used'] = 'Već ste iskoristili tu komadnu! Pričekajte server restart.',
+            ['no_message'] = 'Poruka je prazna.'
         }
     },
     debugging = {

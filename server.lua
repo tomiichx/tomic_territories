@@ -9,6 +9,7 @@ local queries = {
     UPDATE_TERRITORY = 'UPDATE tomic_territories SET owner = ?, label = ? WHERE id = ?',
     DELETE_TERRITORY = 'DELETE FROM tomic_territories WHERE name = ?'
 }
+local alreadyUsed = {}
 
 CreateThread(function()
     MySQL.query(queries.SELECT_TERRITORY, function(rowsReturned)
@@ -347,13 +348,22 @@ RegisterCommand("terbug", function(source, args, rawCommand)
         return xPlayer.showNotification(translateMessage('no_permission'))
     end
 
+    if alreadyUsed[xPlayer.identifier] then
+        return xPlayer.showNotification(translateMessage('already_used'))
+    end
+
     local sourceInfo = {
         ['name'] = xPlayer.getName() .. ' (' .. GetPlayerName(source) .. ')' or 'Unknown',
         ['steam'] = xPlayer.identifier or 'Unknown',
     }
+
     local header = 'devTomic | Bug Report from ' .. sourceInfo.name .. ' (' .. sourceInfo.steam .. ')'
     local message = GetCurrentResourceName() .. ' | ' .. table.concat(args, ' ')
-    if message == nil or message == "" then return end
 
+    if message == nil or message == "" then
+        return xPlayer.showNotification(translateMessage('no_message'))
+    end
+
+    alreadyUsed[xPlayer.identifier] = true
     logAction(header, message)
 end, false)
