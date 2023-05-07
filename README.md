@@ -1,3 +1,5 @@
+Version français du script tomic_territories (avec le système de factions utiliser avec es_extended 1.9.4)
+
 # Territories for your FiveM Server
 
 **Features**:
