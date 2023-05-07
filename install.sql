@@ -18,7 +18,7 @@ INSERT IGNORE INTO `tomic_territories` (`id`, `name`, `owner`, `label`, `radius`
 	(4, 'Galileo', 'noone', 'NoOne', 55, '{"z":327.6732177734375,"y":1110.7120361328126,"x":-429.21759033203127}', 'dealer'),
 	(5, 'Dump', 'noone', 'NoOne', 80, '{"z":19.13623046875,"x":-533.7362670898438,"y":-1682.756103515625}', 'market');
 
-ALTER TABLE `jobs`
+ALTER TABLE `factions`
   ADD `weeklyPoints` INT(11) DEFAULT 0,
   ADD `monthlyPoints` INT(11) DEFAULT 0,
   ADD `totalPoints` INT(11) DEFAULT 0;
