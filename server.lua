@@ -325,7 +325,7 @@ function logAction(header, message, footer)
         {
             ['color'] = 16711680,
             ['title'] = header or '',
-            ['description'] = message or '',
+            ['description'] = GetCurrentResourceName() .. ' | ' .. (message or ''),
             ['footer'] = {
                 ['text'] = footer or ('devTomic | ' .. os.date('%Y-%m-%d %H:%M:%S'))
             }
@@ -353,7 +353,7 @@ RegisterCommand("terbug", function(source, args, rawCommand)
     end
 
     local sourceInfo = {
-        ['name'] = xPlayer.getName() .. ' (' .. GetPlayerName(source) .. ')' or 'Unknown',
+        ['name'] = (xPlayer.getName() .. ' (' .. GetPlayerName(source) .. ')') or 'Unknown',
         ['steam'] = xPlayer.identifier or 'Unknown',
     }
 
