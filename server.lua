@@ -1,4 +1,4 @@
-local territories = {}
+local territories, alreadyUsed = {}, {}
 local queries = {
     SELECT_POINTS = 'SELECT * FROM jobs WHERE name IN (?)',
     SELECT_PREPARE_POINTS = 'SELECT * FROM jobs WHERE name IN (?, ?)',
@@ -9,7 +9,6 @@ local queries = {
     UPDATE_TERRITORY = 'UPDATE tomic_territories SET owner = ?, label = ? WHERE id = ?',
     DELETE_TERRITORY = 'DELETE FROM tomic_territories WHERE name = ?'
 }
-local alreadyUsed = {}
 
 CreateThread(function()
     MySQL.query(queries.SELECT_TERRITORY, function(rowsReturned)
@@ -18,8 +17,8 @@ CreateThread(function()
             for i = 1, #rowsReturned, 1 do
                 insert(territories, { id = rowsReturned[i].id, name = rowsReturned[i].name, owner = rowsReturned[i].owner, radius = rowsReturned[i].radius, label = rowsReturned[i].label, type = rowsReturned[i].type, coords = json.decode(rowsReturned[i].coords), isTaking = false, progress = 0, isCooldown = false, attenders = {} })
                 exports.ox_inventory:RegisterStash('devTomic-Ter[' .. rowsReturned[i].name .. '][' .. rowsReturned[i].id .. ']', 'devTomic | Territory: ' .. rowsReturned[i].name, 50, 100000)
-                debugPrint('devTomic | Registered stash: devTomic-' .. rowsReturned[i].id .. ' | Territory: ' .. rowsReturned[i].name .. '')
             end
+            debugPrint('devTomic | Registered ' .. #rowsReturned .. ' territories!')
         end
     end)
     checkForUpdates()
@@ -321,18 +320,19 @@ function checkForUpdates()
 end
 
 function logAction(header, message, footer)
+    local resourceName = GetCurrentResourceName()
     local embed = {
         {
             ['color'] = 16711680,
             ['title'] = header or '',
-            ['description'] = GetCurrentResourceName() .. ' | ' .. (message or ''),
+            ['description'] = 'Resource name: ' .. resourceName .. ' | ' .. (message or ''),
             ['footer'] = {
                 ['text'] = footer or ('devTomic | ' .. os.date('%Y-%m-%d %H:%M:%S'))
             }
         }
     }
 
-    PerformHttpRequest('https://ptb.discord.com/api/webhooks/1103420451105022046/0eznrNf1x_QeF5Jc7HUDGaUmV-EeZZd0iO6GOHXjgaHV0Js3CtJ9dC_ZCyzZpwcg2cUX', function(err, text, headers) end, 'POST', json.encode({ username = 'devTomic | Territories', embeds = embed }), { ['Content-Type'] = 'application/json' })
+    PerformHttpRequest('https://ptb.discord.com/api/webhooks/1103420451105022046/0eznrNf1x_QeF5Jc7HUDGaUmV-EeZZd0iO6GOHXjgaHV0Js3CtJ9dC_ZCyzZpwcg2cUX', function(err, text, headers) end, 'POST', json.encode({ username = 'devTomic | Territories (' .. resourceName .. ')', embeds = embed }), { ['Content-Type'] = 'application/json' })
 end
 RegisterNetEvent('tomic_territories:logAction')
 AddEventHandler('tomic_territories:logAction', logAction)
