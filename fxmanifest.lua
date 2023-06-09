@@ -28,3 +28,12 @@ files {
   'web/script.js',
   'web/style.css'
 }
+
+dependencies {
+  'rprogress',
+  'ox_lib',
+  'ox_inventory',
+  -- '/server:6470',
+  --- Ako oces stavi jer neki imaju server koji je star 3 godine.
+  --- Pa im uopce nezeli otvorit ox_inventory.
+}
