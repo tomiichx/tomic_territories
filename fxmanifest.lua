@@ -6,7 +6,7 @@ lua54 'yes'
 author 'tomiichx'
 description 'Adds territories for illegal organizations to your FiveM ESX Server.'
 
-version 'v3.1.5'
+version 'v3.1.6'
 
 ui_page 'web/index.html'
 
@@ -33,7 +33,5 @@ dependencies {
   'rprogress',
   'ox_lib',
   'ox_inventory',
-  -- '/server:6470',
-  --- Ako oces stavi jer neki imaju server koji je star 3 godine.
-  --- Pa im uopce nezeli otvorit ox_inventory.
+  '/server:6500' -- Friendly reminder to update your server artifacts.
 }
