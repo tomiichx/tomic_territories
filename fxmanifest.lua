@@ -6,7 +6,7 @@ lua54 'yes'
 author 'tomiichx'
 description 'Adds territories for illegal organizations to your FiveM ESX Server.'
 
-version 'v3.1.5'
+version 'v3.1.6'
 
 ui_page 'web/index.html'
 
@@ -27,4 +27,11 @@ files {
   'web/index.html',
   'web/script.js',
   'web/style.css'
+}
+
+dependencies {
+  'rprogress',
+  'ox_lib',
+  'ox_inventory',
+  '/server:6500' -- Friendly reminder to update your server artifacts.
 }
