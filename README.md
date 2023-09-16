@@ -1,6 +1,6 @@
 # 🏙️ FiveM Territories System
 
-Welcome to the FiveM Server Territories System, a feature-packed resource that enhances your FiveM roleplaying experience with dynamic territory control. Manage different types of territories, engage in capturing battles, track rankings, and more!
+Welcome to the FiveM Territories System, a feature-packed resource that enhances your FiveM roleplaying experience with dynamic territory control. Manage different types of territories, engage in capturing battles, track rankings, and more!
 
 ## 🌟 Key Features
 
