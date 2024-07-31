@@ -44,6 +44,9 @@ local function checkInput(input, typeRequired, checkEmpty)
 end
 
 function createBlips()
+    local renderBlips = (shared.gangOnlyBlips and PlayerData.job and shared.gangs[PlayerData.job.name]) or not shared.gangOnlyBlips
+    if not renderBlips then return end
+
     for i = 1, #territoryCollection do
         local currentTerritory = territoryCollection[i]
         local circleBlip = AddBlipForCoord(currentTerritory.coords.x, currentTerritory.coords.y, currentTerritory.coords.z)

@@ -11,6 +11,7 @@ shared = {
         item = 'black_money', -- item name
         count = 1000 -- amount
     },
+    gangOnlyBlips = true, -- show blips only for gangs that are allowed to capture territories
     itemsToBuy = { -- buyable items if territory type is 'market'
         ['bread'] = {
             label = '🍞 | Bread',
