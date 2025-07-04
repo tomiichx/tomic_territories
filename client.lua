@@ -1,55 +1,80 @@
-local ESX, PlayerData, territoryCollection, headerBlips, circleBlips, progress, lastTerritory, showUI = nil, {}, {}, {}, {}, 0, nil, false
+local ESX = {}
+local PlayerData = {}
+local territoryCollection = {}
+local headerBlips, circleBlips = {}, {}
+local progress = 0
+local lastTerritory = nil
+local showUI = false
 
 CreateThread(function()
-    ESX = exports['es_extended']:getSharedObject()
+    ESX = exports["es_extended"]:getSharedObject()
     PlayerData = ESX.GetPlayerData()
 
-    ESX.TriggerServerCallback('tomic_territories:getTerritories', function(serverData)
-        territoryCollection = serverData
-    end)
+    territoryCollection = lib.callback.await("tomic_territories:getTerritories", 5000)
 
-    Wait(1000) -- Wait for the territories to load (in case you have a lot of them, it'd be clever to keep this here...)
-
-    createBlips()
-end)
-
-RegisterNetEvent('esx:playerLoaded')
-AddEventHandler('esx:playerLoaded', function(xPlayer)
-    PlayerData = xPlayer
-end)
-
-RegisterNetEvent('esx:setJob')
-AddEventHandler('esx:setJob', function(job)
-    PlayerData.job = job
-end)
-
-local function checkInput(input, typeRequired, checkEmpty)
-    checkEmpty = checkEmpty or false
-    if input == nil then return false end
-    if typeRequired == nil then return false end
-
-    if typeRequired == 'any' then return true end
-    if typeRequired == 'number' then input = tonumber(input) end
-    if typeRequired == 'string' then input = tostring(input) end
-
-    if type(input) == 'table' then
-        for k, v in pairs(input) do
-            if type(v) ~= typeRequired or (checkEmpty and (v == '' or v == nil)) then return false end
-        end
-    else
-        if type(input) ~= typeRequired or (checkEmpty and (input == '' or input == nil)) then return false end
+    if not territoryCollection then
+        lib.print.error(Translate("something_went_wrong"))
+        return
     end
 
-    return true
+    CreateBlips()
+end)
+
+RegisterNetEvent("esx:playerLoaded", function(playerInfo)
+    PlayerData = playerInfo
+end)
+
+local monitoringThread = nil
+RegisterNetEvent("esx:setJob", function(newJob)
+    PlayerData.job = newJob
+
+    if monitoringThread then
+        monitoringThread = nil
+    end
+
+    if PlayerData.job and shared.gangs[PlayerData.job.name] then
+        monitoringThread = CreateThread(function()
+            while monitoringThread do
+                Wait(5000)
+                MonitorAttendance()
+            end
+        end)
+    end
+end)
+
+local TYPE_ERROR <const> = "error"
+local TYPE_SUCCESS <const> = "success"
+local TYPE_INFO <const> = "info"
+
+local validTypes <const> = {
+    [TYPE_SUCCESS] = true,
+    [TYPE_ERROR] = true,
+    [TYPE_INFO] = true
+}
+
+function ShowNotification(message, nType)
+    if not message or message:match("^%s*$") then return end
+
+    if not validTypes[nType] then nType = TYPE_INFO end
+
+    lib.notify({
+        title = Translate("territory_menu_title"),
+        description = message,
+        type = nType,
+        position = "top",
+        duration = 5000
+    })
 end
 
-function createBlips()
-    local renderBlips = (shared.gangOnlyBlips and PlayerData.job and shared.gangs[PlayerData.job.name]) or not shared.gangOnlyBlips
+function CreateBlips()
+    local renderBlips = (shared.gangOnlyBlips and PlayerData.job and shared.gangs[PlayerData.job.name]) or
+        not shared.gangOnlyBlips
     if not renderBlips then return end
 
     for i = 1, #territoryCollection do
         local currentTerritory = territoryCollection[i]
-        local circleBlip = AddBlipForCoord(currentTerritory.coords.x, currentTerritory.coords.y, currentTerritory.coords.z)
+        local circleBlip = AddBlipForCoord(currentTerritory.coords.x, currentTerritory.coords.y,
+            currentTerritory.coords.z)
         SetBlipSprite(circleBlip, 373)
         SetBlipDisplay(circleBlip, 8)
         SetBlipScale(circleBlip, 4.0)
@@ -62,34 +87,46 @@ function createBlips()
             end
         end
 
-        local headerBlip = AddBlipForCoord(currentTerritory.coords.x, currentTerritory.coords.y, currentTerritory.coords.z + 15)
+        local headerBlip = AddBlipForCoord(
+            currentTerritory.coords.x,
+            currentTerritory.coords.y,
+            currentTerritory.coords.z + 15
+        )
+
         SetBlipSprite(headerBlip, 310)
         SetBlipDisplay(headerBlip, 4)
-        BeginTextCommandSetBlipName('STRING')
-        AddTextComponentString(string.format(translateMessage('territory_blip_occupied'), currentTerritory.name, currentTerritory.owner ~= 'noone' and currentTerritory.label or translateMessage("territory_blip_unoccupied")))
+        BeginTextCommandSetBlipName("STRING")
+        AddTextComponentString(
+            Translate("territory_blip_occupied"):format(
+                currentTerritory.name,
+                currentTerritory.owner ~= "noone" and currentTerritory.label or Translate("territory_blip_unoccupied")
+            )
+        )
         EndTextCommandSetBlipName(headerBlip)
         SetBlipScale(headerBlip, 0.75)
         SetBlipColour(headerBlip, 0)
         SetBlipAlpha(headerBlip, 250)
         SetBlipAsShortRange(headerBlip, true)
 
-        insert(circleBlips, circleBlip)
-        insert(headerBlips, headerBlip)
+        table.insert(circleBlips, circleBlip)
+        table.insert(headerBlips, headerBlip)
     end
 end
 
-RegisterNetEvent('tomic_territories:updateTerritories')
-AddEventHandler('tomic_territories:updateTerritories', function(serverData)
+RegisterNetEvent("tomic_territories:updateTerritories", function(serverData)
     territoryCollection = serverData
+
     for _, blip in pairs(circleBlips) do RemoveBlip(blip) end
     for _, blip in pairs(headerBlips) do RemoveBlip(blip) end
+
     circleBlips, headerBlips = {}, {}
-    Wait(1000) -- Wait for blips to disappear...
-    createBlips()
+
+    Wait(500)
+
+    CreateBlips()
 end)
 
-RegisterNetEvent('tomic_territories:updateBlips')
-AddEventHandler('tomic_territories:updateBlips', function(id, job)
+RegisterNetEvent("tomic_territories:updateBlips", function(id, job)
     while true do
         Wait(1000)
         if not territoryCollection[id].isTaking then break end
@@ -103,138 +140,197 @@ AddEventHandler('tomic_territories:updateBlips', function(id, job)
     end
 end)
 
-RegisterNetEvent('tomic_territories:createTerritory')
-AddEventHandler('tomic_territories:createTerritory', function()
-    local input = lib.inputDialog(translateMessage('territory_create_input'), {
-        { type = 'input', label = translateMessage('territory_create_name') },
-        { type = 'input', label = translateMessage('territory_create_radius') },
-        { type = 'select', label = translateMessage('territory_create_type'), options = {
-            { value = 'market', label = translateMessage('territory_create_type_market') },
-            { value = 'dealer', label = translateMessage('territory_create_type_dealer') },
-            { value = 'default', label = translateMessage('territory_create_type_default') },
-        } },
+RegisterNetEvent("tomic_territories:createTerritory", function()
+    local input = lib.inputDialog(Translate("territory_create_input"), {
+        { type = "input", label = Translate("territory_create_name") },
+        { type = "input", label = Translate("territory_create_radius") },
+        {
+            type = "select",
+            label = Translate("territory_create_type"),
+            options = {
+                { value = "market",  label = Translate("territory_create_type_market") },
+                { value = "dealer",  label = Translate("territory_create_type_dealer") },
+                { value = "default", label = Translate("territory_create_type_default") },
+            }
+        },
     })
 
     if not input then
-        return ESX.ShowNotification(translateMessage('something_went_wrong'))
+        ShowNotification(Translate("something_went_wrong"), TYPE_ERROR)
+        return
     end
 
-    if not checkInput({ input[1], input[3] }, 'any', true) or not checkInput(input[2], 'number') then
-        return ESX.ShowNotification(translateMessage('fill_all_fields_out'))
+    local name = tostring(input[1])
+    local radius = tonumber(input[2]) or 0
+    local territoryType = tostring(input[3])
+
+    if not name or name:match("^%s*$") then
+        lib.print.error(Translate("fill_all_fields_out"))
+        return
     end
 
-    TriggerServerEvent('tomic_territories:createTerritory', {
+    if not radius or radius <= 0 then
+        lib.print.error(Translate("fill_all_fields_out"))
+        return
+    end
+
+    if not territoryType or territoryType:match("^%s*$") then
+        lib.print.error(Translate("fill_all_fields_out"))
+        return
+    end
+
+    TriggerServerEvent("tomic_territories:createTerritory", {
         id = #territoryCollection + 1,
-        name = input[1],
-        type = input[3],
-        owner = 'noone',
-        label = 'NoOne',
-        radius = input[2],
+        name = name,
+        type = territoryType,
+        owner = "noone",
+        label = "NoOne",
+        radius = radius,
         isTaking = false,
         progress = 0,
         isCooldown = false,
-        coords = GetEntityCoords(PlayerPedId()),
+        coords = GetEntityCoords(cache.ped),
     })
 end)
 
-RegisterNetEvent('tomic_territories:deleteTerritory')
-AddEventHandler('tomic_territories:deleteTerritory', function()
-    local input = lib.inputDialog(translateMessage('territory_delete_input'), {
-        { type = 'input', label = translateMessage('territory_delete_input_name') },
+RegisterNetEvent("tomic_territories:deleteTerritory", function()
+    local input = lib.inputDialog(Translate("territory_delete_input"), {
+        { type = "input", label = Translate("territory_delete_input_name") },
     })
 
     if not input then
-        return ESX.ShowNotification(translateMessage('something_went_wrong'))
+        ShowNotification(Translate("something_went_wrong"), TYPE_ERROR)
+        return
     end
 
-    if not checkInput(input[1], 'any', true) then
-        return ESX.ShowNotification(translateMessage('fill_all_fields_out'))
+    local name = tostring(input[1])
+
+    if not name or name:match("^%s*$") then
+        lib.print.error(Translate("fill_all_fields_out"))
+        return
     end
 
-    TriggerServerEvent('tomic_territories:deleteTerritory', input[1])
+    TriggerServerEvent("tomic_territories:deleteTerritory", name)
 end)
 
-RegisterNetEvent('tomic_territories:updateUI')
-AddEventHandler('tomic_territories:updateUI', function(action, data)
-    SendNUIMessage({action = action, data = data })
+RegisterNetEvent("tomic_territories:updateUI", function(action, data)
+    SendNUIMessage({ action = action, data = data })
 end)
 
-local function isInTerritory(isDead)
-    local playerPed = PlayerPedId()
-    local playerCoords, checkDead = GetEntityCoords(playerPed), isDead
-    for k, v in pairs(territoryCollection) do
+function MonitorAttendance()
+    local playerPed = cache.ped
+    local playerCoords = GetEntityCoords(playerPed)
+
+    for _, v in pairs(territoryCollection) do
         local territoryCoords = vec3(v.coords.x, v.coords.y, v.coords.z)
         local playerTerritoryDistance = #(playerCoords - territoryCoords)
         if playerTerritoryDistance < tonumber(v.radius) and v.isTaking then
             lastTerritory = v.id
-            TriggerServerEvent('tomic_territories:updateAttenders', lastTerritory, PlayerData.identifier, PlayerData.job.name, true, checkDead)
-            return true, k
+            TriggerServerEvent(
+                "tomic_territories:updateAttenders",
+                lastTerritory,
+                PlayerData.identifier,
+                PlayerData.job.name,
+                true,
+                LocalPlayer.state.isDead or LocalPlayer.state.dead
+            )
+            return true
         end
     end
+
     if lastTerritory then
-        TriggerServerEvent('tomic_territories:updateAttenders', lastTerritory, PlayerData.identifier, PlayerData.job.name, false, false)
+        TriggerServerEvent(
+            "tomic_territories:updateAttenders",
+            lastTerritory,
+            PlayerData.identifier,
+            PlayerData.job.name,
+            false,
+            false
+        )
         lastTerritory = nil
     end
+
     return false
 end
 
 CreateThread(function()
-    Wait(2000)
-    if PlayerData.job and shared.gangs[PlayerData.job.name] then
-        while true do
-            Wait(5000)
-            isInTerritory(ESX.GetPlayerData().dead)
-        end
-    end
-end)
+    Wait(1000)
 
-CreateThread(function()
-    Wait(1000) -- Wait for everything to load before displaying the markers...
     while true do
-        local playerCoords, sleepThread = GetEntityCoords(PlayerPedId()), 2000
-        for k, v in pairs(territoryCollection) do
+        local playerCoords = GetEntityCoords(cache.ped)
+        local sleepThread = 2000
+
+        if not (PlayerData.job and shared.gangs[PlayerData.job.name]) then
+            Wait(sleepThread)
+            goto continue
+        end
+
+        for _, v in pairs(territoryCollection) do
             local territoryCoords = vec3(v.coords.x, v.coords.y, v.coords.z)
             local playerTerritoryDistance = #(playerCoords - territoryCoords)
-            if PlayerData.job and shared.gangs[PlayerData.job.name] then
-                if playerTerritoryDistance < tonumber(v.radius) then
-                    sleepThread = 0
-                    DrawMarker(2, territoryCoords.x, territoryCoords.y, territoryCoords.z, 0.0, 0.0, 0.0, 0.0, 0, 0.0, 0.15, 0.15, 0.15, 200, 0, 50, 230, false, false, 0, true, nil, nil, false)
-                    DrawMarker(1, territoryCoords.x, territoryCoords.y, territoryCoords.z, 0.0, 0.0, 0.0, 0.0, 0, 0.0, 0.25, 0.25, 0.02, 255, 255, 255, 255, false, false, 0, true, nil, nil, false)
-                    if playerTerritoryDistance < 1.5 then
-                        if IsControlJustPressed(0, 38) then
-                            TriggerEvent('tomic_territories:infoMenu', { id = v.id, job = PlayerData.job.name, label = PlayerData.job.label, name = v.name, currentOwner = v.owner, terCoords = vec3(v.coords.x, v.coords.y, v.coords.z), isTaking = v.isTaking, isCooldown = v.isCooldown, type = v.type })
-                        end
-                        if not showUI then
-                            showUI = true
-                            lib.showTextUI(string.format(translateMessage('territory_show_text'), v.name))
-                        end
-                    elseif playerTerritoryDistance > 2.0 and showUI then
-                        showUI = false
-                        lib.hideTextUI()
-                    end
-                end
+
+            if playerTerritoryDistance >= tonumber(v.radius) then
+                goto inner_continue
             end
+
+            sleepThread = 0
+
+            DrawMarker(2, territoryCoords.x, territoryCoords.y, territoryCoords.z, 0.0, 0.0, 0.0, 0.0, 0, 0.0,
+                0.15, 0.15, 0.15, 200, 0, 50, 230, false, false, 0, true, nil, nil, false)
+            DrawMarker(1, territoryCoords.x, territoryCoords.y, territoryCoords.z, 0.0, 0.0, 0.0, 0.0, 0, 0.0,
+                0.25, 0.25, 0.02, 255, 255, 255, 255, false, false, 0, true, nil, nil, false)
+
+            if playerTerritoryDistance < 1.5 then
+                if IsControlJustPressed(0, 38) then
+                    DisplayMenu({
+                        id = v.id,
+                        job = PlayerData.job.name,
+                        label = PlayerData.job.label,
+                        name = v.name,
+                        currentOwner = v.owner,
+                        terCoords = vec3(v.coords.x, v.coords.y, v.coords.z),
+                        isTaking = v.isTaking,
+                        isCooldown = v.isCooldown,
+                        type = v.type
+                    })
+                end
+
+                if not showUI then
+                    showUI = true
+                    lib.showTextUI(Translate("territory_show_text"):format(v.name))
+                end
+
+                goto inner_continue
+            end
+
+            if playerTerritoryDistance > 2.0 and showUI then
+                showUI = false
+                lib.hideTextUI()
+            end
+
+            ::inner_continue::
         end
+
+        ::continue::
         Wait(sleepThread)
     end
 end)
 
-RegisterNetEvent('tomic_territories:infoMenu')
-AddEventHandler('tomic_territories:infoMenu', function(terData)
+function DisplayMenu(terData)
     local defaultContext = {
-        id = 'infoMenu' .. terData.id,
-        title = string.format(translateMessage('territory_info_menu'), terData.name),
+        id = "infoMenu" .. terData.id,
+        title = Translate("territory_info_menu"):format(terData.name),
         options = {
             {
-                title = translateMessage('territory_info_menu_capture'),
-                event = 'tomic_territories:captureClient',
+                title = Translate("territory_info_menu_capture"),
+                event = "tomic_territories:captureClient",
                 args = {
                     currentTerritory = terData
                 }
             },
             {
-                title = translateMessage('territory_info_menu_stash'),
-                event = 'tomic_territories:openStash',
+                title = Translate("territory_info_menu_stash"),
+                event = "tomic_territories:openStash",
                 args = {
                     currentTerritory = terData
                 }
@@ -243,43 +339,41 @@ AddEventHandler('tomic_territories:infoMenu', function(terData)
     }
 
     local terType = {
-        ['dealer'] = {
-            title = translateMessage('territory_info_menu_sell'),
-            event = 'tomic_territories:sellList',
+        ["dealer"] = {
+            title = Translate("territory_info_menu_sell"),
+            event = "tomic_territories:sellList",
             args = {
                 data = terData
             }
         },
-        ['market'] = {
-            title = translateMessage('territory_info_menu_buy'),
-            event = 'tomic_territories:buyList',
+        ["market"] = {
+            title = Translate("territory_info_menu_buy"),
+            event = "tomic_territories:buyList",
             args = {
                 data = terData
             }
         }
     }
 
-    insert(defaultContext.options, terType[terData.type])
+    table.insert(defaultContext.options, terType[terData.type])
 
     lib.registerContext(defaultContext)
     lib.showContext(defaultContext.id)
-end)
+end
 
-RegisterNetEvent('tomic_territories:letCount')
-AddEventHandler('tomic_territories:letCount', function(data)
-    local input = lib.inputDialog(data.selected.name, { translateMessage('amount') })
-    local count = tonumber(input[1])
+RegisterNetEvent("tomic_territories:letCount", function(data)
+    local input = lib.inputDialog(data.selected.name, { Translate("amount") })
 
-    if not input then
-        return ESX.ShowNotification(translateMessage('something_went_wrong'))
+    if not input or #input == 0 then
+        ShowNotification(Translate("something_went_wrong"), TYPE_ERROR)
+        return
     end
 
-    if not checkInput(count, 'number', true) then
-        return ESX.ShowNotification(translateMessage('fill_all_fields_out'))
-    end
+    local count = tonumber(input[1]) or 0
 
-    if count < 1 then
-        return ESX.ShowNotification(translateMessage('incorrect_amount'))
+    if count <= 0 then
+        ShowNotification(Translate("fill_all_fields_out"), TYPE_ERROR)
+        return
     end
 
     local itemObject = {
@@ -290,13 +384,13 @@ AddEventHandler('tomic_territories:letCount', function(data)
         itemCurrency = data.selected.currency
     }
 
-    TriggerServerEvent('tomic_territories:marketHandler', itemObject, data.selected.type)
+    TriggerServerEvent("tomic_territories:marketHandler", itemObject, data.selected.type)
 end)
 
-RegisterNetEvent('tomic_territories:sellList')
-AddEventHandler('tomic_territories:sellList', function(args)
+RegisterNetEvent("tomic_territories:sellList", function(args)
     if PlayerData.job.name ~= args.data.currentOwner then
-        return ESX.ShowNotification(translateMessage('territory_not_owned'))
+        ShowNotification(Translate("territory_not_owned"), TYPE_ERROR)
+        return
     end
 
     local itemList = {}
@@ -304,34 +398,34 @@ AddEventHandler('tomic_territories:sellList', function(args)
         local item, label, price, black = k, v.label, v.worth, v.black
         itemList[item] = {
             title = v.label,
-            description = string.format(translateMessage('territory_info_menu_buy_sell_price'), v.worth),
-            event = 'tomic_territories:letCount',
+            description = Translate("territory_info_menu_buy_sell_price"):format(v.worth),
+            event = "tomic_territories:letCount",
             args = {
                 selected = {
                     name = label,
                     key = item,
                     worth = price,
                     currency = black,
-                    type = 'sell'
+                    type = "sell"
                 },
             }
         }
     end
 
     lib.registerContext({
-        id = 'territorySellList',
-        title = translateMessage('territory_info_menu_sell_title'),
+        id = "territorySellList",
+        title = Translate("territory_info_menu_sell_title"),
         options = itemList,
-        menu = 'infoMenu' .. args.data.id,
+        menu = "infoMenu" .. args.data.id,
     })
-    lib.showContext('territorySellList')
+    lib.showContext("territorySellList")
 end)
 
-RegisterNetEvent('tomic_territories:buyList')
-AddEventHandler('tomic_territories:buyList', function(terData)
-    local buyList, terData = {}, terData.data
-    if PlayerData.job.name ~= terData.currentOwner then
-        return ESX.ShowNotification(translateMessage('territory_not_owned'))
+RegisterNetEvent("tomic_territories:buyList", function(terData)
+    local buyList, territoryData = {}, terData.data
+    if PlayerData.job.name ~= territoryData.currentOwner then
+        ShowNotification(Translate("territory_not_owned"), TYPE_ERROR)
+        return
     end
 
     for k, v in pairs(shared.itemsToBuy) do
@@ -341,120 +435,138 @@ AddEventHandler('tomic_territories:buyList', function(terData)
         local black = v.black
         buyList[item] = {
             title = v.label,
-            description = string.format(translateMessage('territory_info_menu_buy_sell_price'), v.worth),
-            event = 'tomic_territories:letCount',
+            description = Translate("territory_info_menu_buy_sell_price"):format(v.worth),
+            event = "tomic_territories:letCount",
             args = {
                 selected = {
                     name = label,
                     key = item,
                     worth = price,
                     currency = black,
-                    type = 'buy'
+                    type = "buy"
                 },
             }
         }
     end
 
     lib.registerContext({
-        id = 'territoryBuyList',
-        title = translateMessage('territory_info_menu_buy_title'),
+        id = "territoryBuyList",
+        title = Translate("territory_info_menu_buy_title"),
         options = buyList,
-        menu = 'infoMenu' .. terData.id,
+        menu = "infoMenu" .. territoryData.id,
     })
-    lib.showContext('territoryBuyList')
+    lib.showContext("territoryBuyList")
 end)
 
-RegisterNetEvent('tomic_territories:captureClient')
-AddEventHandler('tomic_territories:captureClient', function(terData)
+RegisterNetEvent("tomic_territories:captureClient", function(terData)
     local currentTerritory = nil
-    for k, v in pairs(territoryCollection) do
+    for _, v in pairs(territoryCollection) do
         if v.id == terData.currentTerritory.id then
             currentTerritory = v
         end
     end
 
+    if not currentTerritory then
+        ShowNotification(Translate("something_went_wrong"), TYPE_ERROR)
+        return
+    end
+
     if PlayerData.job.name == currentTerritory.owner then
-        return ESX.ShowNotification(translateMessage('territory_already_owned'))
+        ShowNotification(Translate("territory_already_owned"), TYPE_INFO)
+        return
     end
 
     if currentTerritory.isTaking then
-        return ESX.ShowNotification(translateMessage('capture_in_progress'))
+        ShowNotification(Translate("capture_in_progress"), TYPE_INFO)
+        return
     end
 
     if currentTerritory.isCooldown then
-        return ESX.ShowNotification(translateMessage('territory_on_cooldown'))
+        ShowNotification(Translate("territory_on_cooldown"), TYPE_INFO)
+        return
     end
 
-    TriggerServerEvent('tomic_territories:captureServer', currentTerritory.id, PlayerData.job.name, currentTerritory.name, currentTerritory.owner)
+    TriggerServerEvent(
+        "tomic_territories:captureServer",
+        currentTerritory.id,
+        PlayerData.job.name,
+        currentTerritory.name,
+        currentTerritory.owner
+    )
 end)
 
-RegisterNetEvent('tomic_territories:openStash')
-AddEventHandler('tomic_territories:openStash', function(terData)
+RegisterNetEvent("tomic_territories:openStash", function(terData)
     terData = terData.currentTerritory
-    local playerTerritoryDistance = #(terData.terCoords - GetEntityCoords(PlayerPedId()))
+    local playerTerritoryDistance = #(terData.terCoords - GetEntityCoords(cache.ped))
 
     if PlayerData.job and PlayerData.job.name ~= terData.currentOwner then
-        return ESX.ShowNotification(translateMessage('territory_not_owned'))
+        ShowNotification(Translate("territory_not_owned"), TYPE_ERROR)
+        return
     end
 
     if playerTerritoryDistance > 3.0 then
-        return ESX.ShowNotification(translateMessage('too_far_away'))
+        ShowNotification(Translate("too_far_away"), TYPE_ERROR)
+        return
     end
 
-    exports.ox_inventory:openInventory('stash', { id = 'devTomic-Ter[' .. terData.name .. '][' .. terData.id .. ']' })
+    exports.ox_inventory:openInventory(
+        "stash",
+        { id = "devTomic-Ter[" .. terData.name .. "][" .. terData.id .. "]" }
+    )
 end)
 
-RegisterNetEvent('tomic_territories:progressBars')
-AddEventHandler('tomic_territories:progressBars', function(progressType)
-    if progressType == 'start' then
-        exports.rprogress:Custom({ x = 0.5, y = 0.9, From = 0, To = 100, Duration = shared.capturing * 60000 + 500, ShowProgress = true, Radius = 40, Stroke = 3, Width = 300, Height = 40, Label = translateMessage('territory_capture_progress_bar'), LabelPosition = 'right', Color = 'rgba(255, 0, 0, 1.0)', BGColor = 'rgba(0, 0, 0, 0.4)', onComplete = function() exports.rprogress:Stop() end })
-    else
-        exports.rprogress:Stop()
-    end
-end)
-
-RegisterNetEvent('tomic_territories:captureProgress')
-AddEventHandler('tomic_territories:captureProgress', function(terKey, terData)
+RegisterNetEvent("tomic_territories:captureProgress", function(terKey, terData)
     local lastTerritory = terKey
     while true do
         Wait(0)
-        local playerPed = PlayerPedId()
+        local playerPed = cache.ped
         local playerCoords = GetEntityCoords(playerPed)
         local territoryCoords = vec3(terData.coords.x, terData.coords.y, terData.coords.z)
         local playerTerritoryDistance = #(playerCoords - territoryCoords)
-        local isDead = ESX.GetPlayerData().dead
 
         if not terData.isTaking then
             return
         end
 
         if playerTerritoryDistance > terData.radius then
-            TriggerEvent('tomic_territories:progressBars', 'stop')
-            ESX.ShowNotification(translateMessage('territory_cause_distance'))
+            lib.cancelProgress()
+            ShowNotification(Translate("territory_cause_distance"), TYPE_ERROR)
             progress = 0
-            TriggerServerEvent('tomic_territories:endCapturing', lastTerritory)
+            TriggerServerEvent("tomic_territories:endCapturing", lastTerritory)
             lastTerritory = nil
             return
         end
 
-        if isDead then
-            TriggerEvent('tomic_territories:progressBars', 'stop')
-            ESX.ShowNotification(translateMessage('territory_cause_death'))
+        if LocalPlayer.state.isDead or LocalPlayer.state.dead then
+            lib.cancelProgress()
+            ShowNotification(Translate("territory_cause_death"), TYPE_ERROR)
             progress = 0
-            TriggerServerEvent('tomic_territories:endCapturing', lastTerritory)
+            TriggerServerEvent("tomic_territories:endCapturing", lastTerritory)
             lastTerritory = nil
             return
         end
 
         if progress >= 60 then
-            TriggerEvent('tomic_territories:progressBars', 'stop')
-            TriggerServerEvent('tomic_territories:captureComplete', terData.id, PlayerData.job.name, PlayerData.job.label, terData.owner)
+            lib.cancelProgress()
+            TriggerServerEvent("tomic_territories:captureComplete", terData.id, PlayerData.job.name, PlayerData.job
+                .label, terData.owner)
             progress = 0
-            ESX.ShowNotification(string.format(translateMessage('territory_captured'), terData.name))
+            ShowNotification(Translate("territory_captured"):format(terData.name), TYPE_SUCCESS)
             return
         end
 
-        TriggerEvent('tomic_territories:progressBars', 'start')
+        if not lib.progressActive() then
+            lib.progressCircle({
+                duration = shared.capturing * 60000,
+                label = Translate("territory_capture_progress_bar"),
+                position = "bottom",
+                useWhileDead = false,
+                allowSwimming = false,
+                allowCuffed = false,
+                canCancel = true
+            })
+        end
+
         Wait(shared.capturing * 60000 / 60)
         progress = progress + 1
     end
@@ -462,31 +574,31 @@ end)
 
 RegisterCommand(shared.playerCommand, function(source, args, rawCommand)
     local homePage = {
-        id = 'homePage',
-        title = translateMessage('territory_menu_title'),
+        id = "homePage",
+        title = Translate("territory_menu_title"),
         options = {
             {
-                title = translateMessage('territory_list_title'),
-                event = 'tomic_territories:listTerritories',
+                title = Translate("territory_list_title"),
+                event = "tomic_territories:listTerritories",
                 metadata = {
-                    translateMessage('territory_list_metadata')
+                    Translate("territory_list_metadata")
                 }
             },
             {
-                title = 'Info | ❓',
+                title = "Info | ❓",
                 metadata = {
-                    '| Made by Tomić ✅'
+                    "| Made by Tomić ✅"
                 }
             }
         }
     }
 
     if shared.rankings then
-        insert(homePage.options, {
-            title = translateMessage('territory_rankings_title'),
-            event = 'tomic_territories:listRankings',
+        table.insert(homePage.options, {
+            title = Translate("territory_rankings_title"),
+            event = "tomic_territories:listRankings",
             metadata = {
-                translateMessage('territory_rankings_metadata')
+                Translate("territory_rankings_metadata")
             }
         })
     end
@@ -495,72 +607,83 @@ RegisterCommand(shared.playerCommand, function(source, args, rawCommand)
     lib.showContext(homePage.id)
 end, false)
 
-RegisterNetEvent('tomic_territories:listTerritories')
-AddEventHandler('tomic_territories:listTerritories', function()
+RegisterNetEvent("tomic_territories:listTerritories", function()
     local terListCollection = {}
     local territoryStatuses = {
-        ['isCooldown'] = nil,
-        ['isTaking'] = nil
+        ["isCooldown"] = nil,
+        ["isTaking"] = nil
     }
 
     if territoryCollection == nil then return end
 
     for i = 1, #territoryCollection, 1 do
         local currentTerritory = territoryCollection[i]
-        territoryStatuses.isTaking = currentTerritory.isTaking and translateMessage('context_yes') or translateMessage('context_no')
-        territoryStatuses.isCooldown = currentTerritory.isCooldown and translateMessage('context_yes') or translateMessage('context_no')
+        territoryStatuses.isTaking = currentTerritory.isTaking and Translate("context_yes") or
+            Translate("context_no")
+        territoryStatuses.isCooldown = currentTerritory.isCooldown and Translate("context_yes") or
+            Translate("context_no")
         terListCollection[i] = {
-            title = string.format(translateMessage('territory_list_territory_name'), currentTerritory.name),
-            description = string.format(translateMessage('territory_list_territory_owner'), currentTerritory.label),
+            title = Translate("territory_list_territory_name"):format(currentTerritory.name),
+            description = Translate("territory_list_territory_owner"):format(currentTerritory.label),
             metadata = {
-                string.format(translateMessage('territory_list_territory_capturing'), territoryStatuses.isTaking),
-                string.format(translateMessage('territory_list_territory_cooldown'), territoryStatuses.isCooldown)
+                Translate("territory_list_territory_capturing"):format(territoryStatuses.isTaking),
+                Translate("territory_list_territory_cooldown"):format(territoryStatuses.isCooldown)
             },
         }
     end
 
     lib.registerContext({
-        id = 'listTerritories',
-        title = translateMessage('territory_menu_context_title'),
-        menu = 'homePage',
+        id = "listTerritories",
+        title = Translate("territory_menu_context_title"),
+        menu = "homePage",
         options = terListCollection,
     })
-    lib.showContext('listTerritories')
+    lib.showContext("listTerritories")
 end)
 
 if shared.rankings then
-    RegisterNetEvent('tomic_territories:listRankings')
-    AddEventHandler('tomic_territories:listRankings', function()
-        if territoryCollection == nil then return end
-        ESX.TriggerServerCallback('tomic_territories:fetchPoints', function(pointsCollection)
-            local rankCollection = {}
-            for i = 1, #pointsCollection, 1 do
-                table.sort(pointsCollection, function(a, b) return a.totalPoints > b.totalPoints end)
-                rankCollection[i] = {
-                    title = string.format(translateMessage('territory_rankings_gang'), pointsCollection[i].label),
-                    description = string.format(translateMessage('territory_rankings_position'), i),
-                    metadata = {
-                        string.format(translateMessage('territory_rankings_all_time'), pointsCollection[i].totalPoints),
-                        string.format(translateMessage('territory_rankings_monthly'), pointsCollection[i].monthlyPoints),
-                        string.format(translateMessage('territory_rankings_weekly'), pointsCollection[i].weeklyPoints)
-                    }
-                }
-            end
+    RegisterNetEvent("tomic_territories:listRankings", function()
+        if not territoryCollection or #territoryCollection == 0 then return end
 
-            lib.registerContext({
-                id = 'listRankings',
-                menu = 'homePage',
-                title = translateMessage('territory_rankings_menu_context_title'),
-                options = rankCollection,
-            })
-            lib.showContext('listRankings')
+        local pointsCollection = lib.callback.await("tomic_territories:fetchPoints", 5000)
+        if not pointsCollection or #pointsCollection == 0 then
+            lib.print.error(Translate("something_went_wrong"))
+            return
+        end
+
+        table.sort(pointsCollection, function(a, b)
+            return a.totalPoints > b.totalPoints
         end)
+
+        local rankCollection = {}
+        for i = 1, #pointsCollection do
+            local currentEntry = pointsCollection[i]
+            rankCollection[i] = {
+                title = Translate("territory_rankings_gang"):format(currentEntry.label),
+                description = Translate("territory_rankings_position"):format(i),
+                metadata = {
+                    Translate("territory_rankings_all_time"):format(currentEntry.totalPoints),
+                    Translate("territory_rankings_monthly"):format(currentEntry.monthlyPoints),
+                    Translate("territory_rankings_weekly"):format(currentEntry.weeklyPoints)
+                }
+            }
+        end
+
+        lib.registerContext({
+            id = "listRankings",
+            menu = "homePage",
+            title = Translate("territory_rankings_menu_context_title"),
+            options = rankCollection,
+        })
+
+        lib.showContext("listRankings")
     end)
 end
 
-AddEventHandler('onResourceStop', function(resourceName)
-    if resourceName ~= GetCurrentResourceName() then return end
+RegisterNetEvent("onResourceStop", function(resourceName)
+    if resourceName ~= cache.resource then return end
 
-    TriggerEvent('tomic_territories:progressBars', 'stop')
+    lib.cancelProgress()
+    lib.hideTextUI()
     progress = 0
 end)
