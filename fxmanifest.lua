@@ -2,33 +2,42 @@ fx_version "cerulean"
 game "gta5"
 lua54 "yes"
 
+name "tomic_territories"
 author "tomiichx"
-description "Adds territories for illegal organizations to your FiveM Server."
-
-version "v3.2.0"
+version "4.0.0"
+description "Territory control for illegal organizations."
 
 shared_scripts {
-	"@es_extended/imports.lua", -- Will be removed eventually, I promise
-	"@ox_lib/init.lua",
-	"config/shared.lua"
+    "@es_extended/imports.lua",
+    "@ox_lib/init.lua",
+    "shared/config.lua",
 }
 
-client_script "client/main.lua"
-
 server_scripts {
-	"@oxmysql/lib/MySQL.lua",
-	"server/main.lua"
+    "@oxmysql/lib/MySQL.lua",
+    "server/**/*.lua",
+}
+
+client_scripts {
+    "client/**/*.lua",
 }
 
 ui_page "web/index.html"
 
 files {
-	"web/index.html",
-	"web/script.js",
-	"web/style.css"
+    "web/index.html",
+    "web/script.js",
+    "web/style.css",
+    "locales/*.json",
+}
+
+ox_libs {
+    "locale",
 }
 
 dependencies {
-	"ox_lib",
-	"ox_inventory"
+    "es_extended",
+    "ox_lib",
+    "ox_inventory",
+    "oxmysql",
 }
